@@ -15,7 +15,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Visionneuse BIM & Audit BCF</title>
     
-    <script src="../IFCViewer3/lib/jszip.min.js"></script>
+    <script src="../../IFCViewer3/lib/jszip.min.js"></script>
     
     <style>
         body { margin: 0; overflow: hidden; font-family: '-apple-system', 'Segoe UI', sans-serif; background-color: #f0f0f0; }
@@ -323,8 +323,8 @@
     <script type="importmap">
         {
             "imports": {
-                "three": "../IFCViewer3/lib/three.module.js",
-                "web-ifc-viewer": "../IFCViewer3/lib/web-ifc-viewer.js"
+                "three": "../../IFCViewer3/lib/three.module.js",
+                "web-ifc-viewer": "../../IFCViewer3/lib/web-ifc-viewer.js"
             }
         }
     </script>
@@ -426,7 +426,7 @@
         const container = document.getElementById('viewer-container');
         const viewer = new IfcViewerAPI({ container, backgroundColor: new Color(0xf4f7f6) });
         viewer.grid.setGrid();
-        viewer.IFC.setWasmPath('../IFCViewer3/lib/');
+        viewer.IFC.setWasmPath('../../IFCViewer3/lib/');
 
         let listeDefauts = [];
         let donneeTemp = null; 

@@ -8,8 +8,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Audit BIM">
     <link rel="apple-touch-icon" href="./icon-192.png">
- 
-
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -19,7 +17,7 @@
     
     <style>
         body { margin: 0; overflow: hidden; font-family: '-apple-system', 'Segoe UI', sans-serif; background-color: #f0f0f0; }
-        #viewer-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        #viewer-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; touch-action: none; }
         
         /* ── 1. Drawer latéral gauche ── */
         #top-bar {
@@ -47,14 +45,12 @@
             padding: 9px 10px; border: 1px solid #ccc;
             border-radius: 8px; font-size: 0.9em;
         }
-        /* Label titre dans le drawer */
         .drawer-label {
             font-size: 0.7em; font-weight: 700; color: #888;
             text-transform: uppercase; letter-spacing: 0.05em;
             margin-top: 4px;
         }
 
-        /* Overlay sombre derrière le drawer (mobile) */
         #drawer-overlay {
             display: none;
             position: fixed; inset: 0; z-index: 39;
@@ -63,7 +59,6 @@
         }
         body:not(.menu-closed) #drawer-overlay { display: block; }
 
-        /* ── Bouton hamburger fixe — sous le notch ── */
         #btn-collapse-topbar {
             position: fixed;
             top: calc(env(safe-area-inset-top, 0px) + 10px);
@@ -78,7 +73,6 @@
         }
         #btn-collapse-topbar:active { background: #f0f0f0; }
 
-        /* ── 2. Top-action-bar — status centré pleine largeur ── */
         #top-action-bar {
             position: fixed;
             top: calc(env(safe-area-inset-top, 0px) + 10px);
@@ -120,7 +114,6 @@
             font-size: 1.1em; cursor: pointer; align-items: center; justify-content: center;
         }
 
-        /* ── 3. Bottom-sheet collé au bas, sans notch ── */
         #bottom-sheet {
             position: fixed;
             bottom: 0; left: 0; right: 0; z-index: 20;
@@ -129,7 +122,6 @@
             align-items: stretch;
         }
 
-        /* Liste scrollable 30vh */
         #liste-container {
             max-height: 25vh;
             overflow-y: auto;
@@ -145,7 +137,6 @@
             overflow: hidden; border-top: none;
         }
 
-        /* Barre permanente — sans padding notch */
         #sheet-bar {
             display: grid;
             grid-template-columns: auto 1fr;
@@ -168,7 +159,6 @@
         }
         #sheet-bar #btn-supprimer-tout-top:active { filter: brightness(0.9); }
 
-        /* anciens boutons sheet-bar — conservés pour compatibilité, masqués */
         #btn-exporter-bcf { display: none; }
         #btn-toggle-sheet {
             justify-self: center;
@@ -179,7 +169,6 @@
         }
         #btn-toggle-sheet:active { opacity: 0.7; }
 
-        /* 4. Cartes — 3 lignes + photo à droite des boutons */
         .defaut-item {
             background: white;
             border-left: 3px solid #dc3545;
@@ -223,7 +212,6 @@
             overflow: visible;
         }
 
-        /* Droite : boutons + photo côte à côte */
         .defaut-droite {
             display: flex; gap: 6px; align-items: center; flex-shrink: 0;
         }
@@ -240,7 +228,6 @@
         .btn-outil:active { transform: scale(0.92); }
         .btn-outil.supprimer { background: #ffe3e5; border-color: #dc3545; }
 
-        /* Miniature photo */
         .defaut-img-min {
             width: 56px; height: 56px;
             object-fit: cover; border-radius: 6px;
@@ -266,7 +253,6 @@
             z-index: 90; backdrop-filter: blur(2px);
         }
 
-        /* 5. Fenêtres Modales */
         .modal {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
@@ -332,24 +318,19 @@
 </head>
 <body class="menu-closed">
 
-    <!-- Overlay sombre derrière le drawer -->
     <div id="drawer-overlay"></div>
-
-    <!-- Bouton hamburger toujours visible -->
     <button id="btn-collapse-topbar" title="Menu">☰</button>
 
-    <!-- Drawer latéral gauche -->
     <div id="top-bar">
         <button class="btn-action" id="btn-exemple">📦 Exemple</button>
         <button class="btn-action warning" id="btn-nouveau">✨ Nouveau projet</button>
         <label class="btn-action">📂 Charger IFC<input type="file" id="upload-ifc" accept=".ifc,.ifczip,application/octet-stream" onchange="if(this.files[0]&&!/\.(ifc|ifczip)$/i.test(this.files[0].name)){alert('Format non supporté. Choisissez un fichier .ifc ou .ifczip');this.value=''}"></label>
-        <label class="btn-action">📥 Importer BCF<input type="file" id="upload-bcf" accept=".bcf,.bcfzip,.zip" onchange="(function(i){const f=i.files[0];if(!f)return;if(!/\.(bcf|bcfzip|bcfzip\.zip)$/i.test(f.name)){alert('Format non supporté. Choisissez un fichier .bcf, .bcfzip ou .bcfzip.zip');i.value=''};})(this)"></label>
+        <label class="btn-action">📥 Importer BCF<input type="file" id="upload-bcf" accept=".bcf,.bcfzip,.zip" onchange="(function(i){const f=i.files[0];if(!f)return;if(!/\.(bcf|bcfzip|bcfzip\.zip)$/i.test(f.name)){alert('Format non supporté. Choisissez un fichier .bcf, .bcfzip ou .bcfzip.zip');i.value='';};})(this)"></label>
         <span class="drawer-label" style="margin-top:6px">Annotations</span>
         <input type="text" id="nom-projet" placeholder="Nom du projet...">
         <button class="btn-action success" id="btn-exporter-bcf-drawer">💾 Exporter BCF</button>
     </div>
 
-    <!-- Barre top : status uniquement -->
     <div id="top-action-bar">
         <div id="status-bar">👈 Cliquez ici pour choisir une maquette</div>
     </div>
@@ -420,767 +401,8 @@
 
     <div id="viewer-container"></div>
 
-    <script type="module">
-        import { Color, Mesh, SphereGeometry, MeshBasicMaterial, Vector3, Plane } from 'three';
-        import { IfcViewerAPI } from 'web-ifc-viewer';
+    <script type="module">const _0x3d1bc7=_0x44bf;(function(_0x33a72f,_0x524bb6){const _0x5d7eb8=_0x44bf,_0x23e2fa=_0x33a72f();while(!![]){try{const _0x14b13d=-parseInt(_0x5d7eb8(0x188))/0x1*(-parseInt(_0x5d7eb8(0x101))/0x2)+-parseInt(_0x5d7eb8(0xe1))/0x3+-parseInt(_0x5d7eb8(0xf5))/0x4+parseInt(_0x5d7eb8(0xcf))/0x5+-parseInt(_0x5d7eb8(0x14e))/0x6*(parseInt(_0x5d7eb8(0x16b))/0x7)+-parseInt(_0x5d7eb8(0x18f))/0x8+-parseInt(_0x5d7eb8(0x10b))/0x9*(-parseInt(_0x5d7eb8(0x135))/0xa);if(_0x14b13d===_0x524bb6)break;else _0x23e2fa['push'](_0x23e2fa['shift']());}catch(_0x37e483){_0x23e2fa['push'](_0x23e2fa['shift']());}}}(_0x1f1c,0x5841a));import{Color,Mesh,SphereGeometry,MeshBasicMaterial,Vector3,Plane,Raycaster,Vector2}from'three';import{IfcViewerAPI}from'web-ifc-viewer';const container=document[_0x3d1bc7(0xc2)](_0x3d1bc7(0x12e)),viewer=new IfcViewerAPI({'container':container,'backgroundColor':new Color(0xf4f7f6)});viewer['grid']['setGrid'](),viewer[_0x3d1bc7(0x198)][_0x3d1bc7(0x15e)](_0x3d1bc7(0x11e));let listeDefauts=[],donneeTemp=null,idEditionEnCours=null,homeView=null;const TYPE_COLORS={'Issue':0x84298,'Warning':0xffc107,'Architecte':0x9c27b0,'Voie':0x28a745,'GC':0xff8c00,'SIG':0x17a2b8,'LAC':0xdc3545,'Paysage':0x2e7d32,'Station':0x6c757d},TYPE_LABELS={'Issue':_0x3d1bc7(0xd1),'Warning':'⚠️\x20Alerte','Architecte':_0x3d1bc7(0xc4),'Voie':_0x3d1bc7(0x112),'GC':_0x3d1bc7(0x194),'SIG':_0x3d1bc7(0xa8),'LAC':_0x3d1bc7(0x11b),'Paysage':'🌿\x20Paysage','Station':_0x3d1bc7(0x192)};function getMateriau(_0x780894){const _0x38079c=_0x3d1bc7,_0x1d10e2=TYPE_COLORS[_0x780894]??TYPE_COLORS[_0x38079c(0xf3)];return new MeshBasicMaterial({'color':_0x1d10e2});}const geometrieMarqueur=new SphereGeometry(0.25,0x10,0x10),LS_KEY='auditBIM_defauts',LS_NOM='auditBIM_nomProjet';function sauvegarder(){const _0x5bf95a=_0x3d1bc7,_0x3d952c=listeDefauts[_0x5bf95a(0x164)](_0x2cb1c0=>{const {mesh3D:_0x187da5,..._0x4e2f6d}=_0x2cb1c0;return _0x4e2f6d;});try{localStorage[_0x5bf95a(0x170)](LS_KEY,JSON[_0x5bf95a(0x128)](_0x3d952c));}catch(_0x5283e0){console[_0x5bf95a(0x11c)](_0x5bf95a(0x124),_0x5283e0);}const _0x593a20=document['getElementById']('nom-projet')[_0x5bf95a(0xc8)];if(_0x593a20)localStorage['setItem'](LS_NOM,_0x593a20);}function chargerDepuisLocalStorage(){const _0x405eae=_0x3d1bc7;try{const _0x23a463=localStorage[_0x405eae(0x159)](LS_NOM);if(_0x23a463)document['getElementById']('nom-projet')[_0x405eae(0xc8)]=_0x23a463;const _0x4237f2=localStorage[_0x405eae(0x159)](LS_KEY);if(!_0x4237f2)return;const _0x1f5603=JSON[_0x405eae(0xa9)](_0x4237f2);listeDefauts=_0x1f5603,rafraichirListeDefauts(),afficherStatut(_0x405eae(0x131)+listeDefauts[_0x405eae(0x179)]+_0x405eae(0xa4),0x1388);}catch(_0x6628){console[_0x405eae(0x11c)](_0x405eae(0x174),_0x6628);}}function recreerMarqueurs(){listeDefauts['forEach'](_0x5b6546=>{const _0x1bd2b6=_0x44bf;if(_0x5b6546['x']!==undefined&&!isNaN(_0x5b6546['x'])&&!_0x5b6546[_0x1bd2b6(0x189)]){const _0x1147b2=new Mesh(geometrieMarqueur,getMateriau(_0x5b6546[_0x1bd2b6(0x142)]||_0x1bd2b6(0xf3)));_0x1147b2['position'][_0x1bd2b6(0x17b)](_0x5b6546['x'],_0x5b6546['y'],_0x5b6546['z']),viewer[_0x1bd2b6(0x180)]['getScene']()[_0x1bd2b6(0x166)](_0x1147b2),_0x5b6546[_0x1bd2b6(0x189)]=_0x1147b2;}});}const bottomSheet=document[_0x3d1bc7(0xc2)](_0x3d1bc7(0x19a)),btnToggleSheet=document[_0x3d1bc7(0xc2)](_0x3d1bc7(0x17c));function _0x44bf(_0xd9d2e7,_0x1d9866){_0xd9d2e7=_0xd9d2e7-0x9b;const _0x1f1c02=_0x1f1c();let _0x44bf50=_0x1f1c02[_0xd9d2e7];if(_0x44bf['okXNbn']===undefined){var _0x3c0a85=function(_0x20750f){const _0x1986b3='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let _0x780894='',_0x1d10e2='';for(let _0x3d952c=0x0,_0x593a20,_0x2cb1c0,_0x187da5=0x0;_0x2cb1c0=_0x20750f['charAt'](_0x187da5++);~_0x2cb1c0&&(_0x593a20=_0x3d952c%0x4?_0x593a20*0x40+_0x2cb1c0:_0x2cb1c0,_0x3d952c++%0x4)?_0x780894+=String['fromCharCode'](0xff&_0x593a20>>(-0x2*_0x3d952c&0x6)):0x0){_0x2cb1c0=_0x1986b3['indexOf'](_0x2cb1c0);}for(let _0x4e2f6d=0x0,_0x5283e0=_0x780894['length'];_0x4e2f6d<_0x5283e0;_0x4e2f6d++){_0x1d10e2+='%'+('00'+_0x780894['charCodeAt'](_0x4e2f6d)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0x1d10e2);};_0x44bf['sFLsrR']=_0x3c0a85,_0x44bf['aejkOX']={},_0x44bf['okXNbn']=!![];}const _0x355cbb=_0x1f1c02[0x0],_0x3785ae=_0xd9d2e7+_0x355cbb,_0x44d946=_0x44bf['aejkOX'][_0x3785ae];return!_0x44d946?(_0x44bf50=_0x44bf['sFLsrR'](_0x44bf50),_0x44bf['aejkOX'][_0x3785ae]=_0x44bf50):_0x44bf50=_0x44d946,_0x44bf50;}let isSheetFolded=![],timeoutStatut;majTexteTiroir(),chargerDepuisLocalStorage(),document[_0x3d1bc7(0xc2)](_0x3d1bc7(0xbf))[_0x3d1bc7(0x197)]('input',sauvegarder);function afficherStatut(_0x24e5e9,_0x322f93=0x0){const _0x233c8b=_0x3d1bc7,_0x5680d1=document[_0x233c8b(0xc2)]('status-bar');_0x5680d1[_0x233c8b(0x191)]=_0x24e5e9,_0x5680d1[_0x233c8b(0xb6)][_0x233c8b(0x158)]=_0x233c8b(0x17f),_0x5680d1[_0x233c8b(0xb6)][_0x233c8b(0x17a)]='1',clearTimeout(timeoutStatut),_0x322f93>0x0&&(timeoutStatut=setTimeout(()=>{const _0x29a634=_0x233c8b;_0x5680d1[_0x29a634(0xb6)]['opacity']='0',setTimeout(()=>_0x5680d1[_0x29a634(0xb6)][_0x29a634(0x158)]=_0x29a634(0x144),0x1f4);},_0x322f93));}document[_0x3d1bc7(0xc2)](_0x3d1bc7(0x150))[_0x3d1bc7(0x197)](_0x3d1bc7(0x139),()=>{const _0x541a73=_0x3d1bc7;confirm(_0x541a73(0x130))&&(localStorage[_0x541a73(0xf9)](LS_KEY),localStorage['removeItem'](LS_NOM),window[_0x541a73(0x151)][_0x541a73(0x12c)]());});const btnCollapseTopbar=document[_0x3d1bc7(0xc2)](_0x3d1bc7(0x14f)),drawerOverlay=document[_0x3d1bc7(0xc2)]('drawer-overlay');document[_0x3d1bc7(0xfe)][_0x3d1bc7(0x110)][_0x3d1bc7(0x166)](_0x3d1bc7(0xb0));function toggleDrawer(){const _0x57f95c=_0x3d1bc7;document[_0x57f95c(0xfe)][_0x57f95c(0x110)][_0x57f95c(0xc3)](_0x57f95c(0xb0));}btnCollapseTopbar[_0x3d1bc7(0x197)]('click',toggleDrawer),drawerOverlay[_0x3d1bc7(0x197)](_0x3d1bc7(0x139),toggleDrawer),document['getElementById'](_0x3d1bc7(0x113))[_0x3d1bc7(0x197)](_0x3d1bc7(0x10a),_0x17f5e3=>{const _0x381524=_0x3d1bc7,_0x452b25=_0x17f5e3['target'][_0x381524(0xd4)][0x0];if(!_0x452b25)return;const _0x138254=new FileReader();_0x138254[_0x381524(0xc1)]=_0x32003d=>{const _0x47bd86=_0x381524,_0x2549f6=_0x32003d[_0x47bd86(0x132)]['result'];document['getElementById'](_0x47bd86(0xd7))[_0x47bd86(0x13b)]=_0x2549f6;if(donneeTemp)donneeTemp[_0x47bd86(0xa2)]=_0x2549f6;},_0x138254['readAsDataURL'](_0x452b25);}),btnToggleSheet[_0x3d1bc7(0x197)](_0x3d1bc7(0x139),()=>{const _0x258ffc=_0x3d1bc7;isSheetFolded=!isSheetFolded,isSheetFolded?bottomSheet['classList'][_0x258ffc(0x166)](_0x258ffc(0x115)):bottomSheet[_0x258ffc(0x110)][_0x258ffc(0xeb)](_0x258ffc(0x115)),majTexteTiroir();});function majTexteTiroir(){const _0xa9a0b8=_0x3d1bc7,_0x3f6d9c=listeDefauts[_0xa9a0b8(0x179)];isSheetFolded?btnToggleSheet['innerHTML']=_0xa9a0b8(0x126)+_0x3f6d9c+')':btnToggleSheet[_0xa9a0b8(0xa1)]=_0xa9a0b8(0x13f)+_0x3f6d9c+')';}function _0x1f1c(){const _0x3a2b5b=['CMvZDwX0','zxjYB3i','uhjVAMv0x1nHBNnFtM9T','4PYfiejdrIbjBxbVCNtdQsdIGjqG','CMvUzgvY','yMXVyG','CMvTB3zL','y2HHBMDLzfrVDwnOzxm','pd94BwWGDMvYC2LVBJ0Ims4WiIbLBMnVzgLUzZ0IvvrgltGIpZ48uhjVAMvJDev4DgvUC2LVBJ48uhjVAMvJDd48uhjVAMvJDeLKpG','pc9ZCgfUpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGphnWyw4Gy2XHC3m9iMjHzgDLlxr5CguG','CgXHBI1JB250CM9SCW','z2v0u2nLBMu','Dg9Nz2XLuhjVAMvJDgLVBG','Cg9PBNq','sxnZDwu','8j+xUU+4JYbwDwuGzw4GCgXHBIdINjm','mtC3mZu3mMjLzvDVBG','CMvTB3zLrxzLBNrmAxn0zw5LCG','igfUBM90yxrPB24OCYKU','yxbWBgLJyxrPB24VB2n0zxqTC3rYzwfT','CMvTB3zLsxrLBq','ChjVAMvJDc5Iy2y','pc9jBMrLEd48q3jLyxrPB25eyxrLpG','ChvZAa','u3vWChjPBwvYignLigtdQwzHDxqGpW','yM9KEq','C2XPy2u','zgLYwq','mZG4nZzRCwTTDgW','pc9ypJXzpG','4PYfie1HCxvLDhrLignOyxjNW6LLlIbeB3vIBguTy2XPCxvLEIbWB3vYigfUBM90zxiU','DxbA','yMnMlNzLCNnPB24','zgLZDa','pc9ApJWVq2fTzxjHvMLLD1bVAw50pJXdyw1LCMfeAxjLy3rPB24+pfG+','DhLWzs1KzwzHDxq','Dg9gAxHLza','y2HHBMDL','mte3uKPoANj5','zMXLEa','mI1KAwDPDa','4PYfiev4zw1WBguGy2HHCMFdQs4Grg91yMXLlwnSAxf1zxOGCg91CIbHBM5VDgvYlG','y2XHC3noyw1L','y2XHC3nmAxn0','y3jLyxrLrwXLBwvUDa','8j+FOIbwB2LL','DxbSB2fKlxbOB3rV','lMj0BI1ZDxbWCMLTzxiTy3jVAxG','zM9SzgvK','lMj0BI12B2XLCG','lMLMy3PPCa','q2fTzxjHrgLYzwn0Aw9U','zMLSDgvY','BM93','8j+uTcbmqum','D2fYBG','y2fTzxjHq29UDhjVBhm','lI9SAwiV','Dg91y2HLBMq','i3rVCc1Iyxi','y2fTwG','qxvKAxrF','vg91DcbZDxbWCMLTzxiGpW','Bg9JywXtDg9YywDLihbSzwLU','zgLYwa','4PAYiefUBM90yxrPB25ZicG','Dgv4Dc94BwW','C3rYAw5NAwz5','y2XVC2vZDa','EhH4EhH4EhGTEhH4Ec00EhH4lxL4EhGTEhH4EhH4EhH4EhH4','Bw9KywWTDM9PCG','CMvSB2fK','y2fTzxjH','DMLLD2vYlwnVBNrHAw5LCG','DgL0CMuTzgvMyxv0','q3ldQwvYihvUig5VDxzLyxuGChjVAMv0id8Gq2vSysbKW6LJAgfYz2vYysbSysbTyxf1zxr0zsbjrKmGzxqGzwzMywnLCMeGBcDHDwrPDcbLBIbJB3vYCY4','8j+tGIa','DgfYz2v0','4O+ZienOyxjNzw1LBNqGzguGBgeGBwfXDwv0DguUlI4','AwzJq2fTzxjH','mtmYnZyYmgHwBe1rqW','tw9KAwzPzxiGBguGrmoPzMf1Da','Dg9ju09tDhjPBMC','Dg91y2HLCW','y2XPy2S','Cg9ZAxrPB24','C3jJ','4PYfiev4zw1WBguGy2HHCMFdQsdIGjqG','yNrUlwv4AxqTCgXHBG','zgvZyW','4PA8iefUBM90yxrPB25ZicG','Bg9HzefZEw5J','C25HChnOB3qUCg5N','DhLWzq','yNrUlxn1ChbYAw1LCI10B3v0lxrVCa','BM9Uzq','C3bSAxq','Dg91y2HTB3zL','BMfTzq','i2jVDhrVBs1ZAgvLDa','DMLLD3bVAw50lMjJzNy','DxbSB2fKlwLMyW','C3rVCfbYB3bHz2f0Aw9U','z2v0uMvUzgvYzxi','Dg9tDhjPBMC','nJKYntHLruzhq2S','yNrUlwnVBgXHChnLlxrVCgjHCG','yNrUlw5VDxzLyxu','Bg9JyxrPB24','pc9qCM9Qzwn0swq+pe5HBwu+','tMfTzq','z2v0v29YBgreAxjLy3rPB24','A2v5CW','y2fTwq','Aw5KzxHpzG','zgLZCgXHEq','z2v0sxrLBq','tM91DMvHDsbeW6LMyxv0','pc9KAxy+cIaGicaGicaGicaGicaGicaGicaGicaGidXKAxyGy2XHC3m9iMrLzMf1Dc1KzxnJiJ4','8j+xUU+4JYbwDwuGzw4GCgXHBIdIGjqGy291CguGW6aG','CxvLCNLtzwXLy3rVCG','C2v0v2fZBvbHDgG','Bw9KywWTB3zLCMXHEq','ywjZ','yNrUlxjLC2v0lxzPzxC','CgfYC2vgCM9Tu3rYAw5N','yNrUlwzLCM1LCI12B2LY','BwfW','lMj0BI1Hy3rPB24','ywrK','zgjSy2XPy2S','8j+uTsa','y2HHCKnVzgvbDa','rxjYzxvYieLgqYa6ia','mtu0r0TzAMPn','rxjYzxvYiejdrG','zMLUza','pc9uAxrSzt48sw5KzxG+','z2v0vgfYz2v0','C2v0sxrLBq','DgvZDa','pc9oyw1LpJWVuhjVAMvJDd48l1bYB2PLy3rfEhrLBNnPB24+','zM9YrwfJAa','rxjYzxvYihjLC3rHDxjHDgLVBG','CMvHzefZrgf0yvvsta','pd94BwWGDMvYC2LVBJ0Ims4WiIbLBMnVzgLUzZ0IvvrgltGIpZ48twfYA3vWpJXuB3bPyYbhDwLKpsi','cIaGicaGicaGicaGicaGicaGicaGpgrPDIbJBgfZCZ0IzgvMyxv0lwnVBNrLBNuIpGOGicaGicaGicaGicaGicaGicaGicaGica8zgL2ignSyxnZpsjKzwzHDxqTzw4TDgv0zsi+cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8C3bHBIbJBgfZCZ0IzgvMyxv0lxrPDhjLlxr4Dci+','yNrUlwfUBNvSzxiTzgvMyxv0','BgvUz3rO','B3bHy2L0Eq','C2v0','yNrUlxrVz2DSzs1ZAgvLDa','ywn0AxzL','z2vUzxjHDgvbC3LUyW','yMXVy2S','y29UDgv4Da','pc9zpJXApG','DMfSDwvZ','CxvLCNLtzwXLy3rVCKfSBa','Dg9eyxrHvvjm','pgLTzYbJBgfZCZ0IzgvMyxv0lwLTzY1TAw4IihnYyZ0I','cIaGicaGicaGicaGicaGicaGicaGpc9KAxy+cIaGicaGicaGicaGicaGica','C2nYB2XSvg9W','ofLmANr1Ba','BwvZAdne','y2XPzw50wq','BwfYA3vWlMjJzG','Dg9mB3DLCKnHC2u','Bg9UzW','z2v0ug9ZAxrPB24','mJe1nJy4mhjyr3f6AW','lM1VzgfS','Dgv4DenVBNrLBNq','4QYCifn0yxrPB24','i2j0BI1YzxnLDc12Awv3','8j+FOcbhqW','C3fYDa','yxbWzw5Kq2HPBgq','ywrKrxzLBNrmAxn0zw5LCG','suzd','lMj0BI12B2LY','yM90Dg9TlxnOzwv0','zgLY','Aw1NlxzVAxi','pgrPDIbJBgfZCZ0IzgvMyxv0lwLTzY1WBgfJzwHVBgrLCIi+8j+tTZWVzgL2pG','AhjLzG','zgvZyY1KzwzHDxq','CMvWBgfJzq','8j+tGIbmzwn0DxjLigr1iejdrI4UlG','Aw5Uzxjive1m','Aw1Hz2u','y2XVBMu','igfUBM90yxrPB24OCYKGCMvZDgf1CSoPzsHZkq','zM9SzgvY','Dg91y2HZDgfYDa','y2XPzw50wa','8j+uTYbtsuC','CgfYC2u','DhjPBq','vgL0Bgu','zw5KC1DPDgG','y2fTwa','cGPBteftrvi6','DgL0CMu','BwvUDs1JBg9Zzwq','zg93BMXVywq','DMLZAwjSzq','lMjJzNPPCa','CgXHBI1OzwLNAhqTDMfSDwu','AM9PBG','C3r5Bgu','pc9ezxnJCMLWDgLVBJ48l1rVCgLJpJWVtwfYA3vWpG','ChjLDMvUDerLzMf1Bhq','yxn5BMm','Aw5JBhvKzxm','Dg9mB2nHBgveyxrLu3rYAw5N','zgLYwG','rmoPzMf1Da','zMLSzq','BM9TlxbYB2PLDa','4O+ZienOyxjNzw1LBNqGzgvZigfUBM90yxrPB25ZiejdrI4UlG','B25SB2fK','z2v0rwXLBwvUDej5swq','Dg9Nz2XL','8j+FOYbbCMnOAxrLy3rL','Bw9KywWTyw5UB3rHDgLVBG','qxvJDw5LigrLC2nYAxb0Aw9UlG','DgL0CMuTBw9KywWTzM9YBq','DMfSDwu','4O+ZienOyxjNzw1LBNqGzguGBcDLEgvTCgXLieLgqY4UlG','y2XPChbPBMDqBgfUzxm','zNiTrLi','BwvZC2fNzq','rgvZy3jPChrPB24','yNrUlwv4Cg9YDgvYlwjJzI1KCMf3zxi','nJy0nduWtuXWA0Hn','8j+xUU+4JYbwDwuGzw4GCgXHBG','8j+uTsbjC3n1zq','iIbuB3bPy1n0yxr1CZ0It3bLBIi+pfrPDgXLpG','Dxby','zMLSzxm','y3jLyxrLt2jQzwn0vvjm','rxjYzxvYignOyxjNzw1LBNqGzxHLBxbSzsa6ia','ChjLDMLLDY1PBwC','BNvTzxjPyW','CMfUzg9T','yNrUlxbSyw4TDMLLDW','C2v0tg9VA0f0','lI9Zyw1WBguVC2fTCgXLlMLMy3PPCa','Bg9JywXdBgLWCgLUz0vUywjSzwq','yNrUlwv4zw1WBgu','C3rYAw5N','lMLMyW','mJa1nZyZnhfYy0THvq','vNvLigvUihbSyw4GoG','BgLZDguTy29UDgfPBMvY','iIbuB3bPy1r5Cgu9iG'];_0x1f1c=function(){return _0x3a2b5b;};return _0x1f1c();}function gererAffichageBoutons(){majTexteTiroir();}document['getElementById'](_0x3d1bc7(0x161))['addEventListener'](_0x3d1bc7(0x139),()=>{const _0xa360e9=_0x3d1bc7;homeView&&viewer['context'][_0xa360e9(0x134)][_0xa360e9(0x11d)][_0xa360e9(0xdb)](homeView[_0xa360e9(0x13a)]['x'],homeView[_0xa360e9(0x13a)]['y'],homeView[_0xa360e9(0x13a)]['z'],homeView[_0xa360e9(0x132)]['x'],homeView[_0xa360e9(0x132)]['y'],homeView[_0xa360e9(0x132)]['z'],!![]);});let planViewActive=![],planClipPlane=null,planHauteurCourante=1.2;const btnPlanView=document[_0x3d1bc7(0xc2)]('btn-plan-view'),planControls=document[_0x3d1bc7(0xc2)](_0x3d1bc7(0xef)),planHeightSlider=document[_0x3d1bc7(0xc2)]('plan-height-slider'),planHeightValue=document[_0x3d1bc7(0xc2)](_0x3d1bc7(0xb4)),btnExitPlan=document[_0x3d1bc7(0xc2)](_0x3d1bc7(0x13d));function activerVueEnPlan(_0x5699fa){const _0x5ee54a=_0x3d1bc7;planHauteurCourante=_0x5699fa;try{const _0x345981=viewer['context'][_0x5ee54a(0x134)];!planViewActive&&_0x345981[_0x5ee54a(0xf1)]();_0x345981[_0x5ee54a(0x11d)][_0x5ee54a(0xdb)](0x0,0x64,0x0,0x0,0x0,0x0,!![]);const _0x185688=viewer[_0x5ee54a(0x180)]['getRenderer']();planClipPlane&&(_0x185688[_0x5ee54a(0xca)]=[],planClipPlane=null),planClipPlane=new Plane(new Vector3(0x0,-0x1,0x0),_0x5699fa),_0x185688[_0x5ee54a(0xca)]=[planClipPlane],_0x185688['localClippingEnabled']=!![],planViewActive=!![],btnPlanView[_0x5ee54a(0x110)][_0x5ee54a(0x166)](_0x5ee54a(0x17d)),btnPlanView[_0x5ee54a(0xa1)]=_0x5ee54a(0xf4),planControls[_0x5ee54a(0x110)][_0x5ee54a(0x166)](_0x5ee54a(0xb2)),attacherTouchPlan(),afficherStatut(_0x5ee54a(0x15c)+_0x5699fa[_0x5ee54a(0x109)](0x2)+'\x20m',0xfa0);}catch(_0x30e8da){console[_0x5ee54a(0x11c)](_0x5ee54a(0xe2),_0x30e8da);}}function quitterVueEnPlan(){const _0x1664ba=_0x3d1bc7;try{const _0x1554b9=viewer['context']['ifcCamera'];planViewActive&&_0x1554b9[_0x1664ba(0xf1)]();const _0x23f72e=viewer[_0x1664ba(0x180)][_0x1664ba(0x14c)]();_0x23f72e['clippingPlanes']=[],_0x23f72e[_0x1664ba(0xdd)]=![],planClipPlane=null,planViewActive=![],btnPlanView[_0x1664ba(0x110)][_0x1664ba(0xeb)](_0x1664ba(0x17d)),btnPlanView['innerHTML']=_0x1664ba(0xd0),planControls[_0x1664ba(0x110)][_0x1664ba(0xeb)](_0x1664ba(0xb2)),detacherTouchPlan(),homeView&&_0x1554b9[_0x1664ba(0x11d)]['setLookAt'](homeView[_0x1664ba(0x13a)]['x'],homeView['position']['y'],homeView[_0x1664ba(0x13a)]['z'],homeView[_0x1664ba(0x132)]['x'],homeView[_0x1664ba(0x132)]['y'],homeView[_0x1664ba(0x132)]['z'],!![]),afficherStatut('↩️\x20Retour\x20vue\x203D',0xbb8);}catch(_0x3227c5){console[_0x1664ba(0x11c)]('Quitter\x20vue\x20en\x20plan\x20:',_0x3227c5);}}btnPlanView[_0x3d1bc7(0x197)](_0x3d1bc7(0x139),()=>{if(planViewActive)quitterVueEnPlan();else{const _0x4ab8a6=parseFloat(planHeightSlider['value']);activerVueEnPlan(_0x4ab8a6);}}),planHeightSlider[_0x3d1bc7(0x197)]('input',()=>{const _0x5cad58=_0x3d1bc7,_0xd6676d=parseFloat(planHeightSlider[_0x5cad58(0xc8)]);planHeightValue[_0x5cad58(0x191)]=_0xd6676d[_0x5cad58(0x109)](0x2)+'\x20m';if(planViewActive)activerVueEnPlan(_0xd6676d);}),btnExitPlan[_0x3d1bc7(0x197)](_0x3d1bc7(0x139),quitterVueEnPlan);let touchPlanActif=![],touchPrev=null;function distanceTouches(_0x4b0c11,_0x4af0b0){const _0x567a0d=_0x3d1bc7,_0x559c09=_0x4b0c11[_0x567a0d(0xa7)]-_0x4af0b0[_0x567a0d(0xa7)],_0x51c762=_0x4b0c11[_0x567a0d(0x18a)]-_0x4af0b0['clientY'];return Math[_0x567a0d(0x195)](_0x559c09*_0x559c09+_0x51c762*_0x51c762);}function centroideTouches(_0x3a1165,_0x333a36){const _0x306e65=_0x3d1bc7;return{'cx':(_0x3a1165[_0x306e65(0xa7)]+_0x333a36[_0x306e65(0xa7)])/0x2,'cy':(_0x3a1165[_0x306e65(0x18a)]+_0x333a36['clientY'])/0x2};}function onTouchStartPlan(_0x37a845){const _0x53b277=_0x3d1bc7;if(_0x37a845[_0x53b277(0x138)][_0x53b277(0x179)]===0x2){_0x37a845['preventDefault'](),_0x37a845['stopPropagation']();const _0x44f210=distanceTouches(_0x37a845[_0x53b277(0x138)][0x0],_0x37a845[_0x53b277(0x138)][0x1]),_0x58c857=centroideTouches(_0x37a845[_0x53b277(0x138)][0x0],_0x37a845[_0x53b277(0x138)][0x1]);touchPrev={'dist':_0x44f210,'cx':_0x58c857['cx'],'cy':_0x58c857['cy']};}else touchPrev=null;}function onTouchMovePlan(_0x3b0180){const _0x407ff6=_0x3d1bc7;if(_0x3b0180[_0x407ff6(0x138)][_0x407ff6(0x179)]===0x2){_0x3b0180['preventDefault'](),_0x3b0180[_0x407ff6(0x14b)]();const _0xa1b7a6=distanceTouches(_0x3b0180[_0x407ff6(0x138)][0x0],_0x3b0180[_0x407ff6(0x138)][0x1]),_0x455d2a=centroideTouches(_0x3b0180['touches'][0x0],_0x3b0180['touches'][0x1]);if(!touchPrev){touchPrev={'dist':_0xa1b7a6,'cx':_0x455d2a['cx'],'cy':_0x455d2a['cy']};return;}const _0x18848a=viewer[_0x407ff6(0x180)][_0x407ff6(0x134)]['cameraControls'],_0x2fb6df=touchPrev[_0x407ff6(0x106)]/_0xa1b7a6;Math['abs'](_0x2fb6df-0x1)>0.001&&_0x18848a['dolly'](-(_0xa1b7a6-touchPrev[_0x407ff6(0x106)])*0.01,![]);const _0x10373e=_0x455d2a['cx']-touchPrev['cx'],_0x24ddc5=_0x455d2a['cy']-touchPrev['cy'];(Math[_0x407ff6(0x160)](_0x10373e)>0.1||Math['abs'](_0x24ddc5)>0.1)&&_0x18848a['truck'](-_0x10373e*0.005,_0x24ddc5*0.005,![]),touchPrev={'dist':_0xa1b7a6,'cx':_0x455d2a['cx'],'cy':_0x455d2a['cy']};}}function onTouchEndPlan(_0x310e86){_0x310e86['touches']['length']<0x2&&(touchPrev=null);}function attacherTouchPlan(){const _0x327a55=_0x3d1bc7;if(touchPlanActif)return;const _0x3692ce=container[_0x327a55(0x15d)]('canvas');if(!_0x3692ce)return;_0x3692ce[_0x327a55(0x197)](_0x327a55(0xa6),onTouchStartPlan,{'passive':![]}),_0x3692ce[_0x327a55(0x197)](_0x327a55(0x146),onTouchMovePlan,{'passive':![]}),_0x3692ce[_0x327a55(0x197)](_0x327a55(0x11f),onTouchEndPlan,{'passive':!![]}),touchPlanActif=!![];}function detacherTouchPlan(){const _0x533c32=_0x3d1bc7;if(!touchPlanActif)return;const _0x1612eb=container['querySelector']('canvas');if(!_0x1612eb)return;_0x1612eb[_0x533c32(0xf6)](_0x533c32(0xa6),onTouchStartPlan),_0x1612eb[_0x533c32(0xf6)](_0x533c32(0x146),onTouchMovePlan),_0x1612eb[_0x533c32(0xf6)](_0x533c32(0x11f),onTouchEndPlan),touchPlanActif=![],touchPrev=null;}document['getElementById'](_0x3d1bc7(0xde))['addEventListener']('click',async()=>{const _0x2b387d=_0x3d1bc7;afficherStatut(_0x2b387d(0xc9));try{listeDefauts[_0x2b387d(0x173)](_0x4f4e70=>{const _0x5cbb49=_0x2b387d;if(_0x4f4e70[_0x5cbb49(0x189)])viewer[_0x5cbb49(0x180)][_0x5cbb49(0xf0)]()[_0x5cbb49(0xeb)](_0x4f4e70['mesh3D']);}),listeDefauts=[],rafraichirListeDefauts();const _0x4f3942=await fetch(_0x2b387d(0xdc));if(!_0x4f3942['ok'])throw new Error('sample.ifczip\x20introuvable');const _0x4a5cad=await _0x4f3942[_0x2b387d(0xea)](),_0xb58681=await JSZip[_0x2b387d(0x140)](_0x4a5cad),_0x5f243c=Object[_0x2b387d(0x155)](_0xb58681[_0x2b387d(0xd4)])['find'](_0x3333c2=>_0x3333c2[_0x2b387d(0x18c)]()[_0x2b387d(0xac)](_0x2b387d(0xe0)));if(!_0x5f243c)throw new Error('Pas\x20de\x20fichier\x20.ifc\x20dans\x20sample.ifczip');const _0x24ced4=await _0xb58681['files'][_0x5f243c][_0x2b387d(0xb9)]('blob'),_0xf10e45=new File([_0x24ced4],_0x5f243c,{'type':_0x2b387d(0xf8)}),_0x2cb4a2=URL[_0x2b387d(0xd5)](_0xf10e45);await viewer[_0x2b387d(0x198)]['loadIfcUrl'](_0x2cb4a2,!![]);const _0x903b03=viewer[_0x2b387d(0x180)][_0x2b387d(0x134)][_0x2b387d(0x11d)],_0x3708aa=new Vector3(),_0x59fa34=new Vector3();_0x903b03['getPosition'](_0x3708aa),_0x903b03['getTarget'](_0x59fa34),homeView={'position':_0x3708aa,'target':_0x59fa34},document['getElementById'](_0x2b387d(0x161))[_0x2b387d(0xb6)][_0x2b387d(0x158)]=_0x2b387d(0x10c),document[_0x2b387d(0xc2)](_0x2b387d(0xda))[_0x2b387d(0xb6)][_0x2b387d(0x158)]=_0x2b387d(0x10c),document[_0x2b387d(0xfe)][_0x2b387d(0x110)]['add'](_0x2b387d(0xb0)),afficherStatut(_0x2b387d(0xc0));try{const _0x9a18f3=await fetch('./sample/sample.bcfzip');if(!_0x9a18f3['ok'])throw new Error('BCF\x20introuvable');const _0x5da55d=await _0x9a18f3[_0x2b387d(0xea)](),_0x229d88=await JSZip[_0x2b387d(0x140)](_0x5da55d),_0x1d2f01={};for(const _0x2745d3 in _0x229d88[_0x2b387d(0xd4)]){if(_0x229d88['files'][_0x2745d3][_0x2b387d(0x19b)])continue;if(_0x2745d3===_0x2b387d(0xfa)){const _0x25f0bd=await _0x229d88['files'][_0x2745d3][_0x2b387d(0xb9)](_0x2b387d(0xdf)),_0x34251f=new DOMParser()[_0x2b387d(0x162)](_0x25f0bd,'text/xml'),_0x266dfa=_0x34251f['querySelector']('Name')?.['textContent'];if(_0x266dfa)document[_0x2b387d(0xc2)](_0x2b387d(0xbf))[_0x2b387d(0xc8)]=_0x266dfa;continue;}const _0x265778=_0x2745d3[_0x2b387d(0x145)]('/'),_0x5359b2=_0x265778[0x0];if(!_0x5359b2||_0x2745d3['indexOf']('/')===-0x1)continue;if(!_0x1d2f01[_0x5359b2])_0x1d2f01[_0x5359b2]={'id':_0x5359b2,'type':_0x2b387d(0xf3)};if(_0x2745d3['endsWith'](_0x2b387d(0x18b))){const _0x573f44=await _0x229d88[_0x2b387d(0xd4)][_0x2745d3][_0x2b387d(0xb9)]('string'),_0x110e6a=new DOMParser()['parseFromString'](_0x573f44,_0x2b387d(0x127));_0x1d2f01[_0x5359b2]['titre']=_0x110e6a[_0x2b387d(0x15d)](_0x2b387d(0xab))?.[_0x2b387d(0x191)]||_0x2b387d(0xbd);let _0xdc8245=_0x110e6a[_0x2b387d(0x15d)](_0x2b387d(0xcd))?.[_0x2b387d(0x191)]||'';const _0x5ce679=_0xdc8245['match'](/\[LASER:([^;]+);([^;]+);([^\]]+)\]/);_0x5ce679&&(_0x1d2f01[_0x5359b2]['x']=parseFloat(_0x5ce679[0x1]),_0x1d2f01[_0x5359b2]['y']=parseFloat(_0x5ce679[0x2]),_0x1d2f01[_0x5359b2]['z']=parseFloat(_0x5ce679[0x3]),_0xdc8245=_0xdc8245[_0x2b387d(0x9f)](_0x5ce679[0x0],'')[_0x2b387d(0xaa)]()),_0x1d2f01[_0x5359b2][_0x2b387d(0x13e)]=_0xdc8245;}else{if(_0x2745d3['endsWith'](_0x2b387d(0x149))){const _0x5452ea=await _0x229d88['files'][_0x2745d3][_0x2b387d(0xb9)](_0x2b387d(0xdf)),_0x1f7213=new DOMParser()[_0x2b387d(0x162)](_0x5452ea,_0x2b387d(0x127)),_0x3400dc=_0x1f7213[_0x2b387d(0x15d)]('CameraViewPoint'),_0x15ba54=_0x1f7213['querySelector'](_0x2b387d(0x118));if(_0x3400dc&&_0x15ba54){const _0x1afaa0=parseFloat(_0x3400dc[_0x2b387d(0x15d)]('X')[_0x2b387d(0x191)]),_0x11b2e6=parseFloat(_0x3400dc['querySelector']('Y')[_0x2b387d(0x191)]),_0x57d408=parseFloat(_0x3400dc['querySelector']('Z')[_0x2b387d(0x191)]);_0x1d2f01[_0x5359b2][_0x2b387d(0xad)]=_0x1afaa0,_0x1d2f01[_0x5359b2]['camY']=_0x57d408,_0x1d2f01[_0x5359b2][_0x2b387d(0x121)]=-_0x11b2e6;const _0x3d69a6=parseFloat(_0x15ba54['querySelector']('X')[_0x2b387d(0x191)]),_0x592029=parseFloat(_0x15ba54[_0x2b387d(0x15d)]('Y')[_0x2b387d(0x191)]),_0x3c61d6=parseFloat(_0x15ba54[_0x2b387d(0x15d)]('Z')['textContent']);_0x1d2f01[_0x5359b2][_0x2b387d(0x125)]=_0x3d69a6,_0x1d2f01[_0x5359b2][_0x2b387d(0x100)]=_0x3c61d6,_0x1d2f01[_0x5359b2][_0x2b387d(0xbc)]=-_0x592029,_0x1d2f01[_0x5359b2][_0x2b387d(0xd3)]=0x0,_0x1d2f01[_0x5359b2]['upY']=0x1,_0x1d2f01[_0x5359b2]['upZ']=0x0;}}else{if(_0x2745d3[_0x2b387d(0xac)](_0x2b387d(0x141))){const _0x5d6201=await _0x229d88[_0x2b387d(0xd4)][_0x2745d3]['async'](_0x2b387d(0xea));await new Promise(_0x48c31b=>{const _0x5075b9=_0x2b387d,_0x551c85=new FileReader();_0x551c85[_0x5075b9(0x175)](_0x5d6201),_0x551c85['onloadend']=()=>{const _0x1c89cd=_0x5075b9;_0x1d2f01[_0x5359b2][_0x1c89cd(0xa2)]=_0x551c85[_0x1c89cd(0xe5)],_0x48c31b();};});}}}}Object[_0x2b387d(0x182)](_0x1d2f01)[_0x2b387d(0x173)](_0x5c8c1f=>{const _0x39df6a=_0x2b387d;if(_0x5c8c1f['titre']){if(_0x5c8c1f['x']!==undefined&&!isNaN(_0x5c8c1f['x'])){const _0x4e122c=new Mesh(geometrieMarqueur,getMateriau(_0x5c8c1f[_0x39df6a(0x142)]||_0x39df6a(0xf3)));_0x4e122c['position']['set'](_0x5c8c1f['x'],_0x5c8c1f['y'],_0x5c8c1f['z']),viewer[_0x39df6a(0x180)]['getScene']()[_0x39df6a(0x166)](_0x4e122c),_0x5c8c1f[_0x39df6a(0x189)]=_0x4e122c;}listeDefauts['push'](_0x5c8c1f);}}),rafraichirListeDefauts(),afficherStatut(_0x2b387d(0x13c)+listeDefauts[_0x2b387d(0x179)]+'\x20annotation(s).\x20Double-cliquez\x20pour\x20annoter.',0x3a98);}catch(_0x5da9e1){afficherStatut(_0x2b387d(0x10e),0x3a98);}}catch(_0x338e27){alert(_0x2b387d(0xd6)+_0x338e27[_0x2b387d(0xcc)]);}}),document[_0x3d1bc7(0xc2)](_0x3d1bc7(0x14a))[_0x3d1bc7(0x197)](_0x3d1bc7(0x10a),async _0x33edc9=>{const _0x3884ab=_0x3d1bc7,_0x5ac177=_0x33edc9[_0x3884ab(0x132)]['files'][0x0];if(!_0x5ac177)return;afficherStatut(_0x3884ab(0x133));try{listeDefauts['forEach'](_0xf20bde=>{const _0x29a50a=_0x3884ab;if(_0xf20bde[_0x29a50a(0x189)])viewer[_0x29a50a(0x180)]['getScene']()[_0x29a50a(0xeb)](_0xf20bde[_0x29a50a(0x189)]);}),listeDefauts=[],rafraichirListeDefauts();let _0x42c690=_0x5ac177;if(_0x5ac177[_0x3884ab(0x147)]['toLowerCase']()[_0x3884ab(0xac)](_0x3884ab(0x117))){const _0x1361d4=await JSZip[_0x3884ab(0x140)](_0x5ac177);let _0x1cc64e=Object[_0x3884ab(0x155)](_0x1361d4[_0x3884ab(0xd4)])[_0x3884ab(0x16d)](_0x4ddcc6=>_0x4ddcc6[_0x3884ab(0x18c)]()[_0x3884ab(0xac)](_0x3884ab(0xe0)));const _0x1b06f6=await _0x1361d4[_0x3884ab(0xd4)][_0x1cc64e][_0x3884ab(0xb9)](_0x3884ab(0xea));_0x42c690=new File([_0x1b06f6],_0x1cc64e,{'type':_0x3884ab(0xf8)});}const _0x285991=URL[_0x3884ab(0xd5)](_0x42c690);await viewer['IFC']['loadIfcUrl'](_0x285991,!![]),_0x33edc9[_0x3884ab(0x132)][_0x3884ab(0xc8)]='';const _0x19bd6e=viewer['context'][_0x3884ab(0x134)]['cameraControls'],_0x1b8ef4=new Vector3(),_0x5677bc=new Vector3();_0x19bd6e[_0x3884ab(0x18e)](_0x1b8ef4),_0x19bd6e[_0x3884ab(0x16f)](_0x5677bc),homeView={'position':_0x1b8ef4,'target':_0x5677bc},document[_0x3884ab(0xc2)]('btn-reset-view')[_0x3884ab(0xb6)][_0x3884ab(0x158)]=_0x3884ab(0x10c),document[_0x3884ab(0xc2)](_0x3884ab(0xda))[_0x3884ab(0xb6)][_0x3884ab(0x158)]='flex',document[_0x3884ab(0xfe)][_0x3884ab(0x110)][_0x3884ab(0x166)](_0x3884ab(0xb0)),afficherStatut(_0x3884ab(0x103),0x3a98);}catch(_0x591a3){alert(_0x3884ab(0x16a)+_0x591a3[_0x3884ab(0xcc)]);}}),document[_0x3d1bc7(0xc2)]('upload-bcf')['addEventListener'](_0x3d1bc7(0x10a),async _0x4533c4=>{const _0x40d499=_0x3d1bc7,_0x30e9b8=_0x4533c4[_0x40d499(0x132)][_0x40d499(0xd4)][0x0];if(!_0x30e9b8)return;afficherStatut(_0x40d499(0xa0));try{const _0x5e914d=await JSZip[_0x40d499(0x140)](_0x30e9b8),_0x2eed74={};for(const _0x26b3ae in _0x5e914d[_0x40d499(0xd4)]){if(_0x5e914d[_0x40d499(0xd4)][_0x26b3ae]['dir'])continue;if(_0x26b3ae===_0x40d499(0xfa)){const _0x40ed2e=await _0x5e914d[_0x40d499(0xd4)][_0x26b3ae]['async'](_0x40d499(0xdf)),_0x59b631=new DOMParser()[_0x40d499(0x162)](_0x40ed2e,_0x40d499(0x127)),_0x4c1ca7=_0x59b631[_0x40d499(0x15d)](_0x40d499(0x153))?.[_0x40d499(0x191)];if(_0x4c1ca7)document[_0x40d499(0xc2)](_0x40d499(0xbf))[_0x40d499(0xc8)]=_0x4c1ca7;continue;}const _0x21d35c=_0x26b3ae[_0x40d499(0x145)]('/'),_0x203bc2=_0x21d35c[0x0];if(!_0x203bc2||_0x26b3ae[_0x40d499(0x157)]('/')===-0x1)continue;if(!_0x2eed74[_0x203bc2])_0x2eed74[_0x203bc2]={'id':_0x203bc2,'type':_0x40d499(0xf3)};if(_0x26b3ae[_0x40d499(0xac)](_0x40d499(0x18b))){const _0x1d8688=await _0x5e914d['files'][_0x26b3ae][_0x40d499(0xb9)]('string'),_0x31f6b9=new DOMParser()[_0x40d499(0x162)](_0x1d8688,_0x40d499(0x127));_0x2eed74[_0x203bc2][_0x40d499(0xaf)]=_0x31f6b9[_0x40d499(0x15d)](_0x40d499(0xab))?.[_0x40d499(0x191)]||_0x40d499(0xbd);let _0xdab031=_0x31f6b9[_0x40d499(0x15d)](_0x40d499(0xcd))?.[_0x40d499(0x191)]||'';const _0x3413d7=_0xdab031['match'](/\[LASER:([^;]+);([^;]+);([^\]]+)\]/);_0x3413d7&&(_0x2eed74[_0x203bc2]['x']=parseFloat(_0x3413d7[0x1]),_0x2eed74[_0x203bc2]['y']=parseFloat(_0x3413d7[0x2]),_0x2eed74[_0x203bc2]['z']=parseFloat(_0x3413d7[0x3]),_0xdab031=_0xdab031[_0x40d499(0x9f)](_0x3413d7[0x0],'')[_0x40d499(0xaa)]()),_0x2eed74[_0x203bc2][_0x40d499(0x13e)]=_0xdab031;}else{if(_0x26b3ae[_0x40d499(0xac)]('viewpoint.bcfv')){const _0x43780a=await _0x5e914d['files'][_0x26b3ae][_0x40d499(0xb9)](_0x40d499(0xdf)),_0x456d2a=new DOMParser()[_0x40d499(0x162)](_0x43780a,'text/xml'),_0x41025a=_0x456d2a[_0x40d499(0x15d)]('CameraViewPoint'),_0x5cac68=_0x456d2a[_0x40d499(0x15d)](_0x40d499(0x118));if(_0x41025a&&_0x5cac68){const _0x4c02de=parseFloat(_0x41025a[_0x40d499(0x15d)]('X')[_0x40d499(0x191)]),_0x1eac29=parseFloat(_0x41025a[_0x40d499(0x15d)]('Y')[_0x40d499(0x191)]),_0x673e3d=parseFloat(_0x41025a[_0x40d499(0x15d)]('Z')[_0x40d499(0x191)]);_0x2eed74[_0x203bc2][_0x40d499(0xad)]=_0x4c02de,_0x2eed74[_0x203bc2][_0x40d499(0x156)]=_0x673e3d,_0x2eed74[_0x203bc2][_0x40d499(0x121)]=-_0x1eac29;const _0x5cfd5e=parseFloat(_0x5cac68[_0x40d499(0x15d)]('X')[_0x40d499(0x191)]),_0x3991ea=parseFloat(_0x5cac68[_0x40d499(0x15d)]('Y')[_0x40d499(0x191)]),_0x3213d1=parseFloat(_0x5cac68[_0x40d499(0x15d)]('Z')[_0x40d499(0x191)]);_0x2eed74[_0x203bc2][_0x40d499(0x125)]=_0x5cfd5e,_0x2eed74[_0x203bc2][_0x40d499(0x100)]=_0x3213d1,_0x2eed74[_0x203bc2][_0x40d499(0xbc)]=-_0x3991ea,_0x2eed74[_0x203bc2][_0x40d499(0xd3)]=0x0,_0x2eed74[_0x203bc2]['upY']=0x1,_0x2eed74[_0x203bc2][_0x40d499(0x104)]=0x0;}}else{if(_0x26b3ae['endsWith'](_0x40d499(0x141))){const _0x3a88e4=await _0x5e914d[_0x40d499(0xd4)][_0x26b3ae]['async'](_0x40d499(0xea));await new Promise(_0x33c9ac=>{const _0x3294e7=_0x40d499,_0x22a009=new FileReader();_0x22a009[_0x3294e7(0x175)](_0x3a88e4),_0x22a009['onloadend']=()=>{const _0x22a90a=_0x3294e7;_0x2eed74[_0x203bc2]['image']=_0x22a009[_0x22a90a(0xe5)],_0x33c9ac();};});}}}}Object['values'](_0x2eed74)[_0x40d499(0x173)](_0x9d14c8=>{const _0xe6cb9=_0x40d499;if(_0x9d14c8[_0xe6cb9(0xaf)]){if(_0x9d14c8['x']!==undefined&&!isNaN(_0x9d14c8['x'])){const _0x479104=new Mesh(geometrieMarqueur,getMateriau(_0x9d14c8[_0xe6cb9(0x142)]||_0xe6cb9(0xf3)));_0x479104[_0xe6cb9(0x13a)][_0xe6cb9(0x17b)](_0x9d14c8['x'],_0x9d14c8['y'],_0x9d14c8['z']),viewer['context'][_0xe6cb9(0xf0)]()[_0xe6cb9(0x166)](_0x479104),_0x9d14c8['mesh3D']=_0x479104;}listeDefauts[_0xe6cb9(0xfc)](_0x9d14c8);}}),rafraichirListeDefauts(),isSheetFolded=![],bottomSheet['classList']['remove'](_0x40d499(0x115)),_0x4533c4[_0x40d499(0x132)][_0x40d499(0xc8)]='',document['body'][_0x40d499(0x110)][_0x40d499(0x166)](_0x40d499(0xb0)),afficherStatut(_0x40d499(0xe8)+listeDefauts[_0x40d499(0x179)]+_0x40d499(0xf7),0x3a98);}catch(_0x128d9f){alert(_0x40d499(0x16c)),console[_0x40d499(0xe6)](_0x128d9f);}});function lancerAnnotation(_0x27053d,_0x15c69a){const _0x237083=_0x3d1bc7,_0x2d5f38={'clientX':_0x27053d,'clientY':_0x15c69a},_0xd7ea23=viewer['context']['castRayIfc'](_0x2d5f38);if(!_0xd7ea23)return;let _0x3735ef=_0xd7ea23[_0x237083(0xf2)][_0x237083(0xa3)]();planViewActive&&(_0x3735ef['y']=planHauteurCourante);const _0x136f8a=viewer['context']['ifcCamera'][_0x237083(0x11d)][_0x237083(0x12d)],_0x5195aa=_0x136f8a[_0x237083(0x13a)][_0x237083(0xa3)](),_0x1e78b9=new Vector3();_0x136f8a[_0x237083(0x154)](_0x1e78b9);const _0x456085=_0x136f8a['up']['clone'](),_0xc2d417=viewer[_0x237083(0x180)][_0x237083(0x14c)](),_0x211aa9=viewer[_0x237083(0x180)][_0x237083(0xf0)]();_0xc2d417[_0x237083(0xe9)](_0x211aa9,_0x136f8a);const _0x3aeeb0=document[_0x237083(0x15d)]('canvas'),_0x2ca753=_0x3aeeb0[_0x237083(0x184)]('image/png');idEditionEnCours=null,document[_0x237083(0xc2)](_0x237083(0xc7))[_0x237083(0x191)]=_0x237083(0x15a),donneeTemp={'id':generateUUID(),'x':_0x3735ef['x'],'y':_0x3735ef['y'],'z':_0x3735ef['z'],'camX':_0x5195aa['x'],'camY':_0x5195aa['y'],'camZ':_0x5195aa['z'],'dirX':_0x1e78b9['x'],'dirY':_0x1e78b9['y'],'dirZ':_0x1e78b9['z'],'upX':_0x456085['x'],'upY':_0x456085['y'],'upZ':_0x456085['z'],'image':_0x2ca753};const _0x5876e4={'weekday':_0x237083(0x18d),'year':_0x237083(0xd8),'month':'long','day':_0x237083(0xd8),'hour':_0x237083(0x10d),'minute':_0x237083(0x10d)},_0x108152=new Date()[_0x237083(0xbb)](_0x237083(0xcb),_0x5876e4);document[_0x237083(0xc2)](_0x237083(0xd7))[_0x237083(0x13b)]=_0x2ca753,document[_0x237083(0xc2)](_0x237083(0x12f))[_0x237083(0xc8)]='',document['getElementById'](_0x237083(0x9e))[_0x237083(0xc8)]=_0x108152+'\x0a-\x20',ouvrirModal(document[_0x237083(0xc2)]('modal-annotation'));}window[_0x3d1bc7(0x197)](_0x3d1bc7(0x167),_0x234c7a=>{const _0x4136ee=_0x3d1bc7;if(_0x234c7a[_0x4136ee(0x132)][_0x4136ee(0x129)](_0x4136ee(0x120))||_0x234c7a[_0x4136ee(0x132)][_0x4136ee(0x129)](_0x4136ee(0x190))||_0x234c7a['target'][_0x4136ee(0x129)](_0x4136ee(0x148))||_0x234c7a['target'][_0x4136ee(0x129)](_0x4136ee(0x165))||_0x234c7a['target'][_0x4136ee(0x129)](_0x4136ee(0x193)))return;lancerAnnotation(_0x234c7a[_0x4136ee(0xa7)],_0x234c7a[_0x4136ee(0x18a)]);});let dernierTap=0x0,tapTimer=null;container[_0x3d1bc7(0x197)](_0x3d1bc7(0x11f),_0x356ab4=>{const _0x7aae7d=_0x3d1bc7;if(_0x356ab4[_0x7aae7d(0xec)][_0x7aae7d(0x179)]!==0x1)return;if(_0x356ab4[_0x7aae7d(0x132)][_0x7aae7d(0x129)](_0x7aae7d(0x120))||_0x356ab4[_0x7aae7d(0x132)]['closest'](_0x7aae7d(0x190))||_0x356ab4[_0x7aae7d(0x132)]['closest'](_0x7aae7d(0x148))||_0x356ab4['target'][_0x7aae7d(0x129)](_0x7aae7d(0x165)))return;const _0x461218=Date[_0x7aae7d(0x11a)](),_0x327282=_0x461218-dernierTap;if(_0x327282<0x15e&&_0x327282>0x1e){clearTimeout(tapTimer),dernierTap=0x0;const _0x1e0ad5=_0x356ab4['changedTouches'][0x0];lancerAnnotation(_0x1e0ad5[_0x7aae7d(0xa7)],_0x1e0ad5['clientY']),_0x356ab4[_0x7aae7d(0xb8)]();}else dernierTap=_0x461218,tapTimer=setTimeout(()=>{dernierTap=0x0;},0x190);},{'passive':![]}),document['getElementById'](_0x3d1bc7(0x178))[_0x3d1bc7(0x197)]('click',()=>{fermerModals(),donneeTemp=null,idEditionEnCours=null;}),document['getElementById'](_0x3d1bc7(0x163))[_0x3d1bc7(0x197)](_0x3d1bc7(0x139),()=>{fermerModals();}),document['getElementById']('btn-valider-defaut')[_0x3d1bc7(0x197)]('click',()=>{const _0x1b843e=_0x3d1bc7,_0x4db579=document[_0x1b843e(0xc2)](_0x1b843e(0x12f))[_0x1b843e(0xc8)]||_0x1b843e(0xbd),_0x3e262c=document[_0x1b843e(0xc2)](_0x1b843e(0x9e))['value'],_0x183d6c=document[_0x1b843e(0xc2)](_0x1b843e(0x108))[_0x1b843e(0xc8)],_0x2e33d6=document['getElementById'](_0x1b843e(0xd7))[_0x1b843e(0x13b)];if(idEditionEnCours){const _0x52c30c=listeDefauts[_0x1b843e(0x16d)](_0x3439b7=>_0x3439b7['id']===idEditionEnCours);if(_0x52c30c){_0x52c30c[_0x1b843e(0xaf)]=_0x4db579,_0x52c30c[_0x1b843e(0x13e)]=_0x3e262c,_0x52c30c[_0x1b843e(0x142)]=_0x183d6c;if(_0x2e33d6['length']>0x64)_0x52c30c[_0x1b843e(0xa2)]=_0x2e33d6;_0x52c30c[_0x1b843e(0x189)]&&(_0x52c30c[_0x1b843e(0x189)]['material']=getMateriau(_0x183d6c));}}else{if(!donneeTemp)return;donneeTemp[_0x1b843e(0xaf)]=_0x4db579,donneeTemp['desc']=_0x3e262c,donneeTemp[_0x1b843e(0x142)]=_0x183d6c;const _0x54be74=new Mesh(geometrieMarqueur,getMateriau(_0x183d6c||'Issue'));_0x54be74[_0x1b843e(0x13a)][_0x1b843e(0x17b)](donneeTemp['x'],donneeTemp['y'],donneeTemp['z']),viewer['context'][_0x1b843e(0xf0)]()[_0x1b843e(0x166)](_0x54be74),donneeTemp[_0x1b843e(0x189)]=_0x54be74,listeDefauts[_0x1b843e(0xfc)](donneeTemp),isSheetFolded=![],bottomSheet[_0x1b843e(0x110)]['remove'](_0x1b843e(0x115));}rafraichirListeDefauts(),fermerModals(),donneeTemp=null,idEditionEnCours=null,document[_0x1b843e(0xc2)](_0x1b843e(0x113))[_0x1b843e(0xc8)]='';});const overlay=document[_0x3d1bc7(0xc2)](_0x3d1bc7(0x15f));function ouvrirModal(_0x3cc707){const _0x4a5685=_0x3d1bc7;_0x3cc707[_0x4a5685(0xb6)][_0x4a5685(0x158)]='block',overlay[_0x4a5685(0xb6)][_0x4a5685(0x158)]=_0x4a5685(0x17f);}function fermerModals(){const _0x5e52b9=_0x3d1bc7;document[_0x5e52b9(0x183)](_0x5e52b9(0x190))[_0x5e52b9(0x173)](_0x1f022a=>_0x1f022a[_0x5e52b9(0xb6)][_0x5e52b9(0x158)]=_0x5e52b9(0x144)),overlay['style'][_0x5e52b9(0x158)]=_0x5e52b9(0x144);}overlay['addEventListener'](_0x3d1bc7(0x139),()=>{fermerModals(),donneeTemp=null,idEditionEnCours=null;});function rafraichirListeDefauts(){const _0x5a6c5e=_0x3d1bc7,_0x3e6abb=document['getElementById'](_0x5a6c5e(0xe3));_0x3e6abb[_0x5a6c5e(0xa1)]='',listeDefauts[_0x5a6c5e(0x173)](_0x22ca1b=>{const _0x3952f9=_0x5a6c5e,_0x3ddb85=document['createElement']('div');_0x3ddb85[_0x3952f9(0x10f)]='defaut-item';const _0x1e8a5f=(_0x22ca1b[_0x3952f9(0x13e)]||'')['split']('\x0a'),_0xa3f97d=_0x1e8a5f[0x0]||'',_0x305e9e=/^\w+\s+\d+\s+\w+/[_0x3952f9(0x171)](_0xa3f97d)||_0xa3f97d[_0x3952f9(0xba)]('à\x20'),_0x2b3b5c=_0x305e9e?_0xa3f97d:'—',_0x56c2cd=_0x305e9e?_0x1e8a5f[_0x3952f9(0xff)](0x1)[_0x3952f9(0xb5)]('\x0a')[_0x3952f9(0xaa)]():_0x22ca1b[_0x3952f9(0x13e)]||'',_0x530a27=_0x56c2cd&&_0x56c2cd!=='-'?_0x56c2cd:'—',_0xfe25d2=_0x22ca1b['type']||_0x3952f9(0xf3),_0xca387f=TYPE_LABELS[_0x22ca1b[_0x3952f9(0x142)]]||_0x3952f9(0x168)+(_0x22ca1b[_0x3952f9(0x142)]||_0x3952f9(0xf3)),_0x1448e8=_0x22ca1b['image']?_0x3952f9(0x185)+_0x22ca1b[_0x3952f9(0xa2)]+'\x22>':_0x3952f9(0x9c);_0x3ddb85[_0x3952f9(0xa1)]=_0x3952f9(0x177)+_0x22ca1b[_0x3952f9(0xaf)]+_0x3952f9(0xee)+_0xfe25d2+'\x22>'+_0xca387f+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22defaut-date\x22>'+_0x2b3b5c+_0x3952f9(0x15b)+_0x530a27+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22defaut-droite\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22defaut-outils\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22defaut-outils-row\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-outil\x20btn-voler\x22\x20title=\x22Localiser\x22>📍</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-outil\x20btn-editer\x22\x20title=\x22Éditer\x22>✏️</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22defaut-outils-row\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-outil\x20btn-voir\x22\x20title=\x22Voir\x20détails\x22>👁️</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-outil\x20supprimer\x20btn-supprimer-croix\x22\x20title=\x22Supprimer\x22>🗑️</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+_0x1448e8+_0x3952f9(0x186),_0x3ddb85[_0x3952f9(0x15d)](_0x3952f9(0x116))[_0x3952f9(0x197)](_0x3952f9(0x139),()=>{const _0x22ecec=_0x3952f9;_0x22ca1b[_0x22ecec(0xad)]!==undefined&&viewer[_0x22ecec(0x180)]['ifcCamera']['cameraControls'][_0x22ecec(0xdb)](_0x22ca1b['camX'],_0x22ca1b[_0x22ecec(0x156)],_0x22ca1b[_0x22ecec(0x121)],_0x22ca1b['camX']+_0x22ca1b[_0x22ecec(0x125)],_0x22ca1b[_0x22ecec(0x156)]+_0x22ca1b['dirY'],_0x22ca1b[_0x22ecec(0x121)]+_0x22ca1b[_0x22ecec(0xbc)],!![]);}),_0x3ddb85[_0x3952f9(0x15d)]('.btn-editer')['addEventListener'](_0x3952f9(0x139),()=>{const _0x5e6f36=_0x3952f9;idEditionEnCours=_0x22ca1b['id'],document[_0x5e6f36(0xc2)](_0x5e6f36(0xc7))['textContent']=_0x5e6f36(0x136),document[_0x5e6f36(0xc2)]('titre-defaut')['value']=_0x22ca1b[_0x5e6f36(0xaf)],document[_0x5e6f36(0xc2)](_0x5e6f36(0x9e))[_0x5e6f36(0xc8)]=_0x22ca1b[_0x5e6f36(0x13e)]||'',document['getElementById'](_0x5e6f36(0x108))['value']=_0x22ca1b[_0x5e6f36(0x142)]||_0x5e6f36(0xf3),document['getElementById'](_0x5e6f36(0xd7))[_0x5e6f36(0x13b)]=_0x22ca1b[_0x5e6f36(0xa2)]||'',ouvrirModal(document[_0x5e6f36(0xc2)](_0x5e6f36(0xc5)));}),_0x3ddb85[_0x3952f9(0x15d)](_0x3952f9(0x199))[_0x3952f9(0x197)](_0x3952f9(0x139),()=>{const _0x41201b=_0x3952f9;document[_0x41201b(0xc2)]('titre-voir')['textContent']=_0x22ca1b[_0x41201b(0xaf)],document[_0x41201b(0xc2)]('desc-voir')[_0x41201b(0x191)]=_0x22ca1b['desc']||_0x41201b(0xc6);const _0x39273b=document[_0x41201b(0xc2)](_0x41201b(0x9b));_0x22ca1b[_0x41201b(0xa2)]?(_0x39273b[_0x41201b(0x13b)]=_0x22ca1b['image'],_0x39273b[_0x41201b(0xb6)][_0x41201b(0x158)]=_0x41201b(0x17f)):_0x39273b[_0x41201b(0xb6)][_0x41201b(0x158)]='none',ouvrirModal(document[_0x41201b(0xc2)](_0x41201b(0x12b)));}),_0x3ddb85[_0x3952f9(0x15d)](_0x3952f9(0x114))['addEventListener'](_0x3952f9(0x139),()=>{const _0x1664d5=_0x3952f9;confirm(_0x1664d5(0xfd))&&(listeDefauts=listeDefauts[_0x1664d5(0x119)](_0x5d7655=>_0x5d7655['id']!==_0x22ca1b['id']),_0x22ca1b['mesh3D']&&viewer[_0x1664d5(0x180)]['getScene']()[_0x1664d5(0xeb)](_0x22ca1b[_0x1664d5(0x189)]),rafraichirListeDefauts());}),_0x3e6abb[_0x3952f9(0x196)](_0x3ddb85);}),gererAffichageBoutons(),sauvegarder();if(!idEditionEnCours)setTimeout(()=>{const _0x4f096a=_0x5a6c5e;_0x3e6abb[_0x4f096a(0x187)]=_0x3e6abb['scrollHeight'];},0x32);}document[_0x3d1bc7(0xc2)](_0x3d1bc7(0x143))['addEventListener']('click',()=>{const _0x48344c=_0x3d1bc7;confirm(_0x48344c(0x123))&&(listeDefauts['forEach'](_0x387ab9=>{const _0x258b3b=_0x48344c;if(_0x387ab9['mesh3D'])viewer['context'][_0x258b3b(0xf0)]()[_0x258b3b(0xeb)](_0x387ab9['mesh3D']);}),listeDefauts=[],rafraichirListeDefauts());});async function exporterBCF(){const _0x50b04b=_0x3d1bc7;if(listeDefauts['length']===0x0)return;const _0x2a934b=new JSZip();_0x2a934b[_0x50b04b(0xbe)](_0x50b04b(0x105),'<?xml\x20version=\x221.0\x22\x20encoding=\x22UTF-8\x22?><Version\x20VersionId=\x222.1\x22/>');const _0x1336d7=document[_0x50b04b(0xc2)]('nom-projet')[_0x50b04b(0xc8)]||_0x50b04b(0xe7);_0x2a934b[_0x50b04b(0xbe)](_0x50b04b(0xfa),_0x50b04b(0xed)+generateUUID()+_0x50b04b(0x152)+_0x1336d7+_0x50b04b(0x172)),listeDefauts[_0x50b04b(0x173)]((_0x5a6737,_0x564ae1)=>{const _0x5021aa=_0x50b04b,_0x2034fa=_0x2a934b[_0x5021aa(0xa5)](_0x5a6737['id']),_0x45c25e=_0x5a6737['x']!==undefined?_0x5021aa(0xae)+_0x5a6737['x'][_0x5021aa(0x109)](0x4)+';'+_0x5a6737['y'][_0x5021aa(0x109)](0x4)+';'+_0x5a6737['z'][_0x5021aa(0x109)](0x4)+']':'';_0x2034fa[_0x5021aa(0xbe)]('markup.bcf',_0x5021aa(0x176)+_0x5a6737['id']+_0x5021aa(0xe4)+_0x5a6737[_0x5021aa(0x142)]+_0x5021aa(0xd2)+_0x5a6737[_0x5021aa(0xaf)]+_0x5021aa(0x16e)+(_0x564ae1+0x1)+_0x5021aa(0xfb)+new Date()[_0x5021aa(0x137)]()+'</CreationDate><CreationAuthor>Auditeur</CreationAuthor><Description>'+((_0x5a6737['desc']||'')+_0x45c25e)+_0x5021aa(0xb7));if(_0x5a6737[_0x5021aa(0xad)]!==undefined){const _0x51a814=_0x5a6737['camX'],_0x39d595=-_0x5a6737[_0x5021aa(0x121)],_0x4fd2eb=_0x5a6737['camY'],_0x2e7e27=_0x5a6737[_0x5021aa(0x125)],_0x3c8efd=-_0x5a6737[_0x5021aa(0xbc)],_0x5b2e30=_0x5a6737[_0x5021aa(0x100)];_0x2034fa['file'](_0x5021aa(0x149),'<?xml\x20version=\x221.0\x22\x20encoding=\x22UTF-8\x22?><VisualizationInfo><PerspectiveCamera><CameraViewPoint><X>'+_0x51a814+'</X><Y>'+_0x39d595+_0x5021aa(0x181)+_0x4fd2eb+_0x5021aa(0x107)+_0x2e7e27+_0x5021aa(0x102)+_0x3c8efd+_0x5021aa(0x181)+_0x5b2e30+'</Z></CameraDirection><CameraUpVector><X>0</X><Y>0</Y><Z>1</Z></CameraUpVector><FieldOfView>60</FieldOfView></PerspectiveCamera></VisualizationInfo>');}if(_0x5a6737[_0x5021aa(0xa2)]){const _0x29cdc0=_0x5a6737[_0x5021aa(0xa2)][_0x5021aa(0x145)](',')[0x1],_0x191528=atob(_0x29cdc0),_0x4ab977=new ArrayBuffer(_0x191528[_0x5021aa(0x179)]),_0x5809c0=new Uint8Array(_0x4ab977);for(let _0x4ee0da=0x0;_0x4ee0da<_0x191528['length'];_0x4ee0da++)_0x5809c0[_0x4ee0da]=_0x191528[_0x5021aa(0x169)](_0x4ee0da);_0x2034fa['file'](_0x5021aa(0x141),_0x4ab977);}});const _0x2ac8de=await _0x2a934b[_0x50b04b(0x17e)]({'type':_0x50b04b(0xea)}),_0x50f661=document[_0x50b04b(0x111)]('a');_0x50f661[_0x50b04b(0x9d)]=URL[_0x50b04b(0xd5)](_0x2ac8de),_0x50f661[_0x50b04b(0xb1)]=_0x50b04b(0x122)+_0x1336d7[_0x50b04b(0x9f)](/[^a-zA-Z0-9_-]/g,'_')+'_'+new Date()[_0x50b04b(0x137)]()['slice'](0x0,0xa)+_0x50b04b(0xb3),_0x50f661['click']();}document[_0x3d1bc7(0xc2)](_0x3d1bc7(0xce))[_0x3d1bc7(0x197)](_0x3d1bc7(0x139),exporterBCF);function generateUUID(){const _0x588c73=_0x3d1bc7;return _0x588c73(0x12a)[_0x588c73(0x9f)](/[xy]/g,function(_0x1fcaac){const _0x54fbd6=_0x588c73;var _0x394a00=Math[_0x54fbd6(0xd9)]()*0x10|0x0,_0xb7c0af=_0x1fcaac==='x'?_0x394a00:_0x394a00&0x3|0x8;return _0xb7c0af[_0x54fbd6(0x14d)](0x10);});}</script>
 
-        const container = document.getElementById('viewer-container');
-        const viewer = new IfcViewerAPI({ container, backgroundColor: new Color(0xf4f7f6) });
-        viewer.grid.setGrid();
-        viewer.IFC.setWasmPath('../../IFCViewer_lib/lib/');
-
-        let listeDefauts = [];
-        let donneeTemp = null; 
-        let idEditionEnCours = null; 
-        let homeView = null; 
-
-        // ── Couleurs par type ──
-        const TYPE_COLORS = {
-            Issue:      0x084298,
-            Warning:    0xffc107,
-            Architecte: 0x9c27b0,
-            Voie:       0x28a745,
-            GC:         0xff8c00,
-            SIG:        0x17a2b8,
-            LAC:        0xdc3545,
-            Paysage:    0x2e7d32,
-            Station:    0x6c757d,
-        };
-        const TYPE_LABELS = {
-            Issue:      '🔵 Issue',
-            Warning:    '⚠️ Alerte',
-            Architecte: '🟣 Architecte',
-            Voie:       '🟢 Voie',
-            GC:         '🟠 GC',
-            SIG:        '🔷 SIG',
-            LAC:        '🔴 LAC',
-            Paysage:    '🌿 Paysage',
-            Station:    '⬜ Station',
-        };
-
-        function getMateriau(type) {
-            const color = TYPE_COLORS[type] ?? TYPE_COLORS.Issue;
-            return new MeshBasicMaterial({ color });
-        }
-
-        const geometrieMarqueur = new SphereGeometry(0.25, 16, 16);
-
-        // --- PERSISTANCE localStorage ---
-        const LS_KEY = 'auditBIM_defauts';
-        const LS_NOM = 'auditBIM_nomProjet';
-
-        function sauvegarder() {
-            // On sérialise sans mesh3D (non sérialisable)
-            const data = listeDefauts.map(d => {
-                const { mesh3D, ...rest } = d;
-                return rest;
-            });
-            try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch(e) { console.warn('localStorage plein', e); }
-            const nom = document.getElementById('nom-projet').value;
-            if (nom) localStorage.setItem(LS_NOM, nom);
-        }
-
-        function chargerDepuisLocalStorage() {
-            try {
-                const nomSauve = localStorage.getItem(LS_NOM);
-                if (nomSauve) document.getElementById('nom-projet').value = nomSauve;
-                const raw = localStorage.getItem(LS_KEY);
-                if (!raw) return;
-                const data = JSON.parse(raw);
-                listeDefauts = data; // mesh3D sera null, recréé après chargement IFC
-                rafraichirListeDefauts();
-                afficherStatut(`📂 ${listeDefauts.length} annotation(s) restaurée(s)`, 5000);
-            } catch(e) { console.warn('Erreur restauration', e); }
-        }
-
-        // Recrée les marqueurs 3D pour les défauts déjà en mémoire (après chargement IFC)
-        function recreerMarqueurs() {
-            listeDefauts.forEach(def => {
-                if (def.x !== undefined && !isNaN(def.x) && !def.mesh3D) {
-                    const marqueur = new Mesh(geometrieMarqueur, getMateriau(def.type || "Issue"));
-                    marqueur.position.set(def.x, def.y, def.z);
-                    viewer.context.getScene().add(marqueur);
-                    def.mesh3D = marqueur;
-                }
-            });
-        }
-
-        const bottomSheet = document.getElementById('bottom-sheet');
-        const btnToggleSheet = document.getElementById('btn-toggle-sheet');
-        let isSheetFolded = false;  // déplié par défaut
-        
-        let timeoutStatut;
-
-        // État initial de la barre (avant restauration)
-        majTexteTiroir();
-
-        // Restaurer au démarrage
-        chargerDepuisLocalStorage();
-
-        // Sauvegarder le nom de projet à chaque frappe
-        document.getElementById('nom-projet').addEventListener('input', sauvegarder);
-
-        // --- Gestion de la barre de statut (masquage automatique) ---
-        function afficherStatut(message, autoHideMs = 0) {
-            const sb = document.getElementById('status-bar');
-            sb.textContent = message;
-            sb.style.display = 'block';
-            sb.style.opacity = '1';
-            
-            clearTimeout(timeoutStatut);
-            if(autoHideMs > 0) {
-                timeoutStatut = setTimeout(() => {
-                    sb.style.opacity = '0'; // Déclenche la transition CSS
-                    setTimeout(() => sb.style.display = 'none', 500); // Retire l'élément après fondu
-                }, autoHideMs);
-            }
-        }
-
-        document.getElementById('btn-nouveau').addEventListener('click', () => {
-            if(confirm("Créer un nouveau projet ? Cela déchargera la maquette IFC et effacera l'audit en cours.")) {
-                localStorage.removeItem(LS_KEY);
-                localStorage.removeItem(LS_NOM);
-                window.location.reload(); 
-            }
-        });
-
-        // --- Drawer latéral : fermé par défaut ---
-        const btnCollapseTopbar = document.getElementById('btn-collapse-topbar');
-        const drawerOverlay = document.getElementById('drawer-overlay');
-        document.body.classList.add('menu-closed');  // fermé par défaut
-
-        function toggleDrawer() {
-            document.body.classList.toggle('menu-closed');
-        }
-        btnCollapseTopbar.addEventListener('click', toggleDrawer);
-        drawerOverlay.addEventListener('click', toggleDrawer);
-
-        document.getElementById('upload-photo').addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const base64 = e.target.result;
-                document.getElementById('preview-img').src = base64;
-                if(donneeTemp) donneeTemp.image = base64;
-            };
-            reader.readAsDataURL(file);
-        });
-
-        btnToggleSheet.addEventListener('click', () => {
-            isSheetFolded = !isSheetFolded;
-            if (isSheetFolded) { bottomSheet.classList.add('folded'); } 
-            else { bottomSheet.classList.remove('folded'); }
-            majTexteTiroir();
-        });
-
-        function majTexteTiroir() {
-            const n = listeDefauts.length;
-            if (isSheetFolded) {
-                btnToggleSheet.innerHTML = `▲ Annotations (${n})`;
-            } else {
-                btnToggleSheet.innerHTML = `▼ Annotations (${n})`;
-            }
-        }
-
-        function gererAffichageBoutons() {
-            // La barre est toujours visible — on ne masque jamais #bottom-sheet
-            majTexteTiroir();
-        }
-
-        document.getElementById('btn-reset-view').addEventListener('click', () => {
-            if (homeView) {
-                viewer.context.ifcCamera.cameraControls.setLookAt(
-                    homeView.position.x, homeView.position.y, homeView.position.z,
-                    homeView.target.x, homeView.target.y, homeView.target.z,
-                    true 
-                );
-            }
-        });
-
-        // --- CHARGEMENT IFC ---
-        document.getElementById('btn-exemple').addEventListener('click', async () => {
-            afficherStatut("⏳ Chargement de l'exemple IFC...");
-            try {
-                // Décharger les annotations BCF en cours
-                listeDefauts.forEach(def => { if (def.mesh3D) viewer.context.getScene().remove(def.mesh3D); });
-                listeDefauts = [];
-                rafraichirListeDefauts();
-
-                // Charger le .ifczip sample
-                const reponseIfc = await fetch('../../IFCViewer_lib/sample/sample.ifczip');
-                if (!reponseIfc.ok) throw new Error('sample.ifczip introuvable');
-                const ifcBlob = await reponseIfc.blob();
-                const ifcZip = await JSZip.loadAsync(ifcBlob);
-                const nomIfc = Object.keys(ifcZip.files).find(n => n.toLowerCase().endsWith('.ifc'));
-                if (!nomIfc) throw new Error('Pas de fichier .ifc dans sample.ifczip');
-                const ifcFileBlob = await ifcZip.files[nomIfc].async("blob");
-                const ifcFichier = new File([ifcFileBlob], nomIfc, { type: "application/octet-stream" });
-                const ifcUrl = URL.createObjectURL(ifcFichier);
-                await viewer.IFC.loadIfcUrl(ifcUrl, true);
-
-                const camControls = viewer.context.ifcCamera.cameraControls;
-                const p = new Vector3(); const t = new Vector3();
-                camControls.getPosition(p); camControls.getTarget(t);
-                homeView = { position: p, target: t };
-                document.getElementById('btn-reset-view').style.display = 'flex';
-                document.getElementById('btn-plan-view').style.display = 'flex';
-                document.body.classList.add('menu-closed');
-
-                afficherStatut("⏳ Chargement des annotations BCF...");
-
-                // Charger le BCF sample
-                try {
-                    const reponseBcf = await fetch('../../IFCViewer_lib/sample/sample.bcfzip');
-                    if (!reponseBcf.ok) throw new Error('BCF introuvable');
-                    const bcfBlob = await reponseBcf.blob();
-                    const zip = await JSZip.loadAsync(bcfBlob);
-                    const defautsParGuid = {};
-                    for (const path in zip.files) {
-                        if (zip.files[path].dir) continue;
-                        if (path === 'project.bcf') {
-                            const xml = await zip.files[path].async("string");
-                            const doc = new DOMParser().parseFromString(xml, "text/xml");
-                            const nom = doc.querySelector("Name")?.textContent;
-                            if (nom) document.getElementById('nom-projet').value = nom;
-                            continue;
-                        }
-                        const parts = path.split('/');
-                        const guid = parts[0];
-                        if (!guid || path.indexOf('/') === -1) continue;
-                        if (!defautsParGuid[guid]) defautsParGuid[guid] = { id: guid, type: "Issue" };
-                        if (path.endsWith('markup.bcf')) {
-                            const xml = await zip.files[path].async("string");
-                            const doc = new DOMParser().parseFromString(xml, "text/xml");
-                            defautsParGuid[guid].titre = doc.querySelector("Title")?.textContent || "Défaut";
-                            let desc = doc.querySelector("Description")?.textContent || "";
-                            const m = desc.match(/\[LASER:([^;]+);([^;]+);([^\]]+)\]/);
-                            if (m) { defautsParGuid[guid].x = parseFloat(m[1]); defautsParGuid[guid].y = parseFloat(m[2]); defautsParGuid[guid].z = parseFloat(m[3]); desc = desc.replace(m[0], '').trim(); }
-                            defautsParGuid[guid].desc = desc;
-                        } else if (path.endsWith('viewpoint.bcfv')) {
-                            const xml = await zip.files[path].async("string");
-                            const doc = new DOMParser().parseFromString(xml, "text/xml");
-                            const pos = doc.querySelector("CameraViewPoint");
-                            const dir = doc.querySelector("CameraDirection");
-                            if (pos && dir) {
-                                // Reconversion BCF (Z=haut) → Three.js (Y=haut) : (X,Y,Z) → (X,Z,-Y)
-                                const pX = parseFloat(pos.querySelector("X").textContent);
-                                const pY = parseFloat(pos.querySelector("Y").textContent);
-                                const pZ = parseFloat(pos.querySelector("Z").textContent);
-                                defautsParGuid[guid].camX =  pX;
-                                defautsParGuid[guid].camY =  pZ;
-                                defautsParGuid[guid].camZ = -pY;
-                                const dX = parseFloat(dir.querySelector("X").textContent);
-                                const dY = parseFloat(dir.querySelector("Y").textContent);
-                                const dZ = parseFloat(dir.querySelector("Z").textContent);
-                                defautsParGuid[guid].dirX =  dX;
-                                defautsParGuid[guid].dirY =  dZ;
-                                defautsParGuid[guid].dirZ = -dY;
-                                defautsParGuid[guid].upX = 0;
-                                defautsParGuid[guid].upY = 1;
-                                defautsParGuid[guid].upZ = 0;
-                            }
-                        } else if (path.endsWith('snapshot.png')) {
-                            const b = await zip.files[path].async("blob");
-                            await new Promise(resolve => {
-                                const reader = new FileReader();
-                                reader.readAsDataURL(b);
-                                reader.onloadend = () => { defautsParGuid[guid].image = reader.result; resolve(); };
-                            });
-                        }
-                    }
-                    Object.values(defautsParGuid).forEach(def => {
-                        if (def.titre) {
-                            if (def.x !== undefined && !isNaN(def.x)) {
-                                const marqueur = new Mesh(geometrieMarqueur, getMateriau(def.type || "Issue"));
-                                marqueur.position.set(def.x, def.y, def.z);
-                                viewer.context.getScene().add(marqueur);
-                                def.mesh3D = marqueur;
-                            }
-                            listeDefauts.push(def);
-                        }
-                    });
-                    rafraichirListeDefauts();
-                    afficherStatut("✅ Exemple chargé — " + listeDefauts.length + " annotation(s). Double-cliquez pour annoter.", 15000);
-                } catch(eBcf) {
-                    afficherStatut("✅ Exemple chargé. Double-cliquez pour annoter.", 15000);
-                }
-            } catch (err) { alert("Erreur chargement exemple : " + err.message); }
-        });
-
-        document.getElementById('upload-ifc').addEventListener('change', async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-            afficherStatut("⏳ Chargement de la maquette...");
-            try {
-                // Décharger les annotations BCF en cours
-                listeDefauts.forEach(def => { if (def.mesh3D) viewer.context.getScene().remove(def.mesh3D); });
-                listeDefauts = [];
-                rafraichirListeDefauts();
-
-                let fichierFinal = file; 
-                if (file.name.toLowerCase().endsWith('.ifczip')) {
-                    const zip = await JSZip.loadAsync(file);
-                    let nomIfc = Object.keys(zip.files).find(n => n.toLowerCase().endsWith('.ifc'));
-                    const blob = await zip.files[nomIfc].async("blob");
-                    fichierFinal = new File([blob], nomIfc, { type: "application/octet-stream" });
-                }
-                const url = URL.createObjectURL(fichierFinal);
-                await viewer.IFC.loadIfcUrl(url, true);
-                event.target.value = '';
-                
-                const camControls = viewer.context.ifcCamera.cameraControls;
-                const p = new Vector3();
-                const t = new Vector3();
-                camControls.getPosition(p);
-                camControls.getTarget(t);
-                homeView = { position: p, target: t };
-                document.getElementById('btn-reset-view').style.display = 'flex';
-                document.getElementById('btn-plan-view').style.display = 'flex';
-
-                // Fermer le drawer latéral
-                document.body.classList.add('menu-closed');
-
-                afficherStatut("✅ Maquette chargée. Double-cliquez pour annoter.", 15000);
-            } catch (err) { alert("Erreur IFC : " + err.message); } 
-        });
-
-        // --- IMPORT BCF ---
-        document.getElementById('upload-bcf').addEventListener('change', async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-            afficherStatut("📂 Lecture du BCF...");
-            try {
-                const zip = await JSZip.loadAsync(file);
-                const defautsParGuid = {};
-                for (const path in zip.files) {
-                    if (zip.files[path].dir) continue;
-                    if (path === 'project.bcf') {
-                        const xml = await zip.files[path].async("string");
-                        const doc = new DOMParser().parseFromString(xml, "text/xml");
-                        const nomProjetExtrait = doc.querySelector("Name")?.textContent;
-                        if (nomProjetExtrait) document.getElementById('nom-projet').value = nomProjetExtrait;
-                        continue;
-                    }
-                    const parts = path.split('/');
-                    const guid = parts[0];
-                    if (!guid || path.indexOf('/') === -1) continue; 
-                    if (!defautsParGuid[guid]) defautsParGuid[guid] = { id: guid, type: "Issue" };
-
-                    if (path.endsWith('markup.bcf')) {
-                        const xml = await zip.files[path].async("string");
-                        const doc = new DOMParser().parseFromString(xml, "text/xml");
-                        defautsParGuid[guid].titre = doc.querySelector("Title")?.textContent || "Défaut";
-                        let descriptionReelle = doc.querySelector("Description")?.textContent || "";
-                        const matchLaser = descriptionReelle.match(/\[LASER:([^;]+);([^;]+);([^\]]+)\]/);
-                        if (matchLaser) {
-                            defautsParGuid[guid].x = parseFloat(matchLaser[1]);
-                            defautsParGuid[guid].y = parseFloat(matchLaser[2]);
-                            defautsParGuid[guid].z = parseFloat(matchLaser[3]);
-                            descriptionReelle = descriptionReelle.replace(matchLaser[0], '').trim();
-                        }
-                        defautsParGuid[guid].desc = descriptionReelle;
-                    } else if (path.endsWith('viewpoint.bcfv')) {
-                        const xml = await zip.files[path].async("string");
-                        const doc = new DOMParser().parseFromString(xml, "text/xml");
-                        const pos = doc.querySelector("CameraViewPoint");
-                        const dir = doc.querySelector("CameraDirection");
-                        if (pos && dir) {
-                            // Reconversion BCF (Z=haut) → Three.js (Y=haut) : (X,Y,Z) → (X,Z,-Y)
-                            const pX = parseFloat(pos.querySelector("X").textContent);
-                            const pY = parseFloat(pos.querySelector("Y").textContent);
-                            const pZ = parseFloat(pos.querySelector("Z").textContent);
-                            defautsParGuid[guid].camX =  pX;
-                            defautsParGuid[guid].camY =  pZ;
-                            defautsParGuid[guid].camZ = -pY;
-                            const dX = parseFloat(dir.querySelector("X").textContent);
-                            const dY = parseFloat(dir.querySelector("Y").textContent);
-                            const dZ = parseFloat(dir.querySelector("Z").textContent);
-                            defautsParGuid[guid].dirX =  dX;
-                            defautsParGuid[guid].dirY =  dZ;
-                            defautsParGuid[guid].dirZ = -dY;
-                            // upVector Three.js toujours (0,1,0)
-                            defautsParGuid[guid].upX = 0;
-                            defautsParGuid[guid].upY = 1;
-                            defautsParGuid[guid].upZ = 0;
-                        }
-                    } else if (path.endsWith('snapshot.png')) {
-                        // Lecture async correcte : convertir en Promise pour attendre la fin
-                        const blob = await zip.files[path].async("blob");
-                        await new Promise(resolve => {
-                            const reader = new FileReader();
-                            reader.readAsDataURL(blob);
-                            reader.onloadend = () => { defautsParGuid[guid].image = reader.result; resolve(); }
-                        });
-                    }
-                }
-                Object.values(defautsParGuid).forEach(def => {
-                    if(def.titre) {
-                        if (def.x !== undefined && !isNaN(def.x)) {
-                            const marqueur = new Mesh(geometrieMarqueur, getMateriau(def.type || "Issue"));
-                            marqueur.position.set(def.x, def.y, def.z);
-                            viewer.context.getScene().add(marqueur);
-                            def.mesh3D = marqueur;
-                        }
-                        listeDefauts.push(def);
-                    }
-                });
-                rafraichirListeDefauts();
-                isSheetFolded = false;
-                bottomSheet.classList.remove('folded');
-                event.target.value = '';
-                document.body.classList.add('menu-closed');
-                afficherStatut("✅ BCF Importé — " + listeDefauts.length + " annotation(s).", 15000);
-            } catch (err) { alert("Erreur BCF"); console.error(err); }
-        });
-
-        // --- ANNOTATION (Double Clic) ---
-        window.addEventListener('dblclick', async (event) => {
-            if(event.target.closest('#top-bar') || event.target.closest('.modal') || event.target.closest('#bottom-sheet') || event.target.closest('.btn-action') || event.target.closest('#btn-reset-view')) return;
-            const intersection = viewer.context.castRayIfc(event);
-            if (!intersection) return; 
-
-            const pointHit = intersection.point;
-            const cam = viewer.context.ifcCamera.cameraControls.camera;
-            const camPos = cam.position.clone();
-            const camDir = new Vector3();
-            cam.getWorldDirection(camDir);
-            const camUp = cam.up.clone();
-
-            const renderer = viewer.context.getRenderer();
-            const scene = viewer.context.getScene();
-            renderer.render(scene, cam);
-            const canvas = document.querySelector('canvas');
-            const imageBase64 = canvas.toDataURL("image/png");
-
-            idEditionEnCours = null; 
-            document.getElementById('titre-modal-form').textContent = "Nouveau Défaut";
-
-            donneeTemp = {
-                id: generateUUID(),
-                x: pointHit.x, y: pointHit.y, z: pointHit.z,
-                camX: camPos.x, camY: camPos.y, camZ: camPos.z,
-                dirX: camDir.x, dirY: camDir.y, dirZ: camDir.z,
-                upX: camUp.x, upY: camUp.y, upZ: camUp.z,
-                image: imageBase64
-            };
-
-            const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-            const dateStr = new Date().toLocaleDateString('fr-FR', optionsDate);
-
-            document.getElementById('preview-img').src = imageBase64;
-            document.getElementById('titre-defaut').value = "";
-            document.getElementById('desc-defaut').value = `${dateStr}\n- `; 
-            ouvrirModal(document.getElementById('modal-annotation'));
-        });
-
-        document.getElementById('btn-annuler-defaut').addEventListener('click', () => { 
-            fermerModals();
-            donneeTemp = null; 
-            idEditionEnCours = null;
-        });
-
-        document.getElementById('btn-fermer-voir').addEventListener('click', () => { 
-            fermerModals();
-        });
-
-        document.getElementById('btn-valider-defaut').addEventListener('click', () => {
-            const titreVal = document.getElementById('titre-defaut').value || "Défaut";
-            const descVal = document.getElementById('desc-defaut').value;
-            const typeVal = document.getElementById('type-defaut').value;
-            const imgVal = document.getElementById('preview-img').src;
-
-            if (idEditionEnCours) {
-                const defToEdit = listeDefauts.find(d => d.id === idEditionEnCours);
-                if (defToEdit) {
-                    defToEdit.titre = titreVal;
-                    defToEdit.desc = descVal;
-                    defToEdit.type = typeVal;
-                    if(imgVal.length > 100) defToEdit.image = imgVal;
-                    // Mettre à jour la couleur du marqueur 3D
-                    if (defToEdit.mesh3D) {
-                        defToEdit.mesh3D.material = getMateriau(typeVal);
-                    }
-                }
-            } else {
-                if (!donneeTemp) return;
-                donneeTemp.titre = titreVal;
-                donneeTemp.desc = descVal;
-                donneeTemp.type = typeVal;
-
-                const marqueur = new Mesh(geometrieMarqueur, getMateriau(typeVal || "Issue"));
-                marqueur.position.set(donneeTemp.x, donneeTemp.y, donneeTemp.z);
-                viewer.context.getScene().add(marqueur);
-                
-                donneeTemp.mesh3D = marqueur;
-                listeDefauts.push(donneeTemp);
-                
-                isSheetFolded = false;
-                bottomSheet.classList.remove('folded');
-            }
-
-            rafraichirListeDefauts();
-            fermerModals();
-            donneeTemp = null;
-            idEditionEnCours = null;
-            document.getElementById('upload-photo').value = ""; 
-        });
-
-        // --- GESTION OVERLAY ---
-        const overlay = document.getElementById('modal-overlay');
-        function ouvrirModal(el) { el.style.display = 'block'; overlay.style.display = 'block'; }
-        function fermerModals() { 
-            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-            overlay.style.display = 'none';
-        }
-        overlay.addEventListener('click', () => { fermerModals(); donneeTemp = null; idEditionEnCours = null; });
-
-        // --- AFFICHAGE DE LA LISTE ---
-        function rafraichirListeDefauts() {
-            const conteneur = document.getElementById('liste-container');
-            conteneur.innerHTML = '';
-            
-            listeDefauts.forEach(def => {
-                const div = document.createElement('div');
-                div.className = "defaut-item";
-
-                // Extraire la date du début de la description
-                const descLines = (def.desc || "").split('\n');
-                const premiereLigne = descLines[0] || "";
-                const isDateLine = /^\w+\s+\d+\s+\w+/.test(premiereLigne) || premiereLigne.includes('à ');
-                const dateAffichee = isDateLine ? premiereLigne : "—";
-                const descSansDate = isDateLine ? descLines.slice(1).join('\n').trim() : def.desc || "";
-                const descAffichee = descSansDate && descSansDate !== '-' ? descSansDate : '—';
-
-                const badgeClass = def.type || 'Issue';
-                const badgeLabel = TYPE_LABELS[def.type] || ('🔵 ' + (def.type || 'Issue'));
-
-                const imgHtml = def.image
-                    ? `<img class="defaut-img-min" src="${def.image}">`
-                    : `<div class="defaut-img-placeholder">📷</div>`;
-
-                div.innerHTML = `
-                    <div class="defaut-contenu">
-                        <div class="defaut-en-tete">
-                            <span class="defaut-titre-txt">${def.titre}</span>
-                            <span class="badge-type ${badgeClass}">${badgeLabel}</span>
-                        </div>
-                        <div class="defaut-date">${dateAffichee}</div>
-                        <div class="defaut-desc">${descAffichee}</div>
-                    </div>
-                    <div class="defaut-droite">
-                        <div class="defaut-outils">
-                            <div class="defaut-outils-row">
-                                <button class="btn-outil btn-voler" title="Localiser">📍</button>
-                                <button class="btn-outil btn-editer" title="Éditer">✏️</button>
-                            </div>
-                            <div class="defaut-outils-row">
-                                <button class="btn-outil btn-voir" title="Voir détails">👁️</button>
-                                <button class="btn-outil supprimer btn-supprimer-croix" title="Supprimer">🗑️</button>
-                            </div>
-                        </div>
-                        ${imgHtml}
-                    </div>
-                `;
-
-                div.querySelector('.btn-voler').addEventListener('click', () => {
-                    if (def.camX !== undefined) {
-                        viewer.context.ifcCamera.cameraControls.setLookAt(
-                            def.camX, def.camY, def.camZ, def.camX + def.dirX, def.camY + def.dirY, def.camZ + def.dirZ, true 
-                        );
-                    }
-                });
-
-                div.querySelector('.btn-editer').addEventListener('click', () => {
-                    idEditionEnCours = def.id;
-                    document.getElementById('titre-modal-form').textContent = "Modifier le Défaut";
-                    document.getElementById('titre-defaut').value = def.titre;
-                    document.getElementById('desc-defaut').value = def.desc || "";
-                    document.getElementById('type-defaut').value = def.type || "Issue";
-                    document.getElementById('preview-img').src = def.image || "";
-                    ouvrirModal(document.getElementById('modal-annotation'));
-                });
-
-                div.querySelector('.btn-voir').addEventListener('click', () => {
-                    document.getElementById('titre-voir').textContent = def.titre;
-                    document.getElementById('desc-voir').textContent = def.desc || "Aucune description.";
-                    const imgVoir = document.getElementById('img-voir');
-                    if (def.image) {
-                        imgVoir.src = def.image;
-                        imgVoir.style.display = 'block';
-                    } else {
-                        imgVoir.style.display = 'none';
-                    }
-                    ouvrirModal(document.getElementById('modal-voir'));
-                });
-
-                div.querySelector('.btn-supprimer-croix').addEventListener('click', () => {
-                    if(confirm("Supprimer ce défaut ?")) {
-                        listeDefauts = listeDefauts.filter(d => d.id !== def.id);
-                        if (def.mesh3D) { viewer.context.getScene().remove(def.mesh3D); }
-                        rafraichirListeDefauts();
-                    }
-                });
-
-                conteneur.appendChild(div);
-            });
-            
-            gererAffichageBoutons();
-            sauvegarder();
-            if(!idEditionEnCours) setTimeout(() => { conteneur.scrollTop = conteneur.scrollHeight; }, 50);
-        }
-
-        document.getElementById('btn-supprimer-tout-top').addEventListener('click', () => {
-            if(confirm("Tout supprimer ?")) {
-                listeDefauts.forEach(def => { if (def.mesh3D) viewer.context.getScene().remove(def.mesh3D); });
-                listeDefauts = [];
-                rafraichirListeDefauts();
-            }
-        });
-
-        async function exporterBCF() {
-            if (listeDefauts.length === 0) return;
-            const zip = new JSZip();
-            zip.file("bcf.version", `<?xml version="1.0" encoding="UTF-8"?><Version VersionId="2.1"/>`);
-
-            const nomProjet = document.getElementById('nom-projet').value || "Projet_Sans_Nom";
-            zip.file("project.bcf", `<?xml version="1.0" encoding="UTF-8"?><ProjectExtension><Project><ProjectId>${generateUUID()}</ProjectId><Name>${nomProjet}</Name></Project></ProjectExtension>`);
-
-            listeDefauts.forEach((def, index) => {
-                const folder = zip.folder(def.id);
-                // [LASER] garde les coords Three.js natives (Y=haut) pour la réimportation PWA
-                const codeLaser = def.x !== undefined ? `\n\n[LASER:${def.x.toFixed(4)};${def.y.toFixed(4)};${def.z.toFixed(4)}]` : "";
-
-                folder.file("markup.bcf", `<?xml version="1.0" encoding="UTF-8"?><Markup><Topic Guid="${def.id}" TopicType="${def.type}" TopicStatus="Open"><Title>${def.titre}</Title><Index>${index+1}</Index><CreationDate>${new Date().toISOString()}</CreationDate><CreationAuthor>Auditeur</CreationAuthor><Description>${(def.desc || "") + codeLaser}</Description></Topic></Markup>`);
-
-                if (def.camX !== undefined) {
-                    // Conversion Three.js (Y=haut) → IFC/BCF (Z=haut)
-                    // Position : (X, Y, Z) → (X, -Z, Y)
-                    // Direction : (X, Y, Z) → (X, -Z, Y)
-                    // UpVector : (0,1,0) → (0,0,1)
-                    const posX =  def.camX, posY = -def.camZ, posZ =  def.camY;
-                    const dirX =  def.dirX, dirY = -def.dirZ, dirZ =  def.dirY;
-                    folder.file("viewpoint.bcfv", `<?xml version="1.0" encoding="UTF-8"?><VisualizationInfo><PerspectiveCamera><CameraViewPoint><X>${posX}</X><Y>${posY}</Y><Z>${posZ}</Z></CameraViewPoint><CameraDirection><X>${dirX}</X><Y>${dirY}</Y><Z>${dirZ}</Z></CameraDirection><CameraUpVector><X>0</X><Y>0</Y><Z>1</Z></CameraUpVector><FieldOfView>60</FieldOfView></PerspectiveCamera></VisualizationInfo>`);
-                }
-
-                if (def.image) {
-                    const imgData = def.image.split(',')[1];
-                    const byteString = atob(imgData);
-                    const ab = new ArrayBuffer(byteString.length);
-                    const ia = new Uint8Array(ab);
-                    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-                    folder.file("snapshot.png", ab);
-                }
-            });
-
-            const content = await zip.generateAsync({ type: "blob" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(content);
-            link.download = `Audit_${nomProjet.replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date().toISOString().slice(0,10)}.bcfzip`;
-            link.click();
-        }
-
-        // ── VUE EN PLAN ──
-        let planViewActive = false;
-        let planClipPlane = null;
-        const btnPlanView = document.getElementById('btn-plan-view');
-        const planControls = document.getElementById('plan-controls');
-        const planHeightSlider = document.getElementById('plan-height-slider');
-        const planHeightValue = document.getElementById('plan-height-value');
-        const btnExitPlan = document.getElementById('btn-exit-plan');
-
-        function activerVueEnPlan(hauteur) {
-            try {
-                // 1. Caméra orthographique (vue plate, pas de perspective)
-                const cam = viewer.context.ifcCamera;
-                if (!planViewActive) {
-                    cam.toggleProjection(); // passe en ortho
-                }
-                // 2. Positionner la caméra au-dessus, regardant vers le bas
-                cam.cameraControls.setLookAt(0, 100, 0, 0, 0, 0, true);
-
-                // 3. Coupe horizontale à la hauteur choisie
-                const renderer = viewer.context.getRenderer();
-                // Retirer l'ancienne coupe si elle existe
-                if (planClipPlane) {
-                    renderer.clippingPlanes = [];
-                    planClipPlane = null;
-                }
-                // Plan de coupe horizontal (normal vers le bas) à Y = hauteur
-                planClipPlane = new Plane(new Vector3(0, -1, 0), hauteur);
-                renderer.clippingPlanes = [planClipPlane];
-                renderer.localClippingEnabled = true;
-
-                planViewActive = true;
-                btnPlanView.classList.add('active');
-                btnPlanView.innerHTML = '🗺️ Vue en plan ✓';
-                planControls.classList.add('visible');
-                afficherStatut(`🗺️ Vue en plan — coupe à ${hauteur.toFixed(2)} m`, 4000);
-            } catch(e) { console.warn('Vue en plan :', e); }
-        }
-
-        function quitterVueEnPlan() {
-            try {
-                const cam = viewer.context.ifcCamera;
-                if (planViewActive) {
-                    cam.toggleProjection(); // repasse en perspective
-                }
-                // Supprimer la coupe
-                const renderer = viewer.context.getRenderer();
-                renderer.clippingPlanes = [];
-                renderer.localClippingEnabled = false;
-                planClipPlane = null;
-                planViewActive = false;
-                btnPlanView.classList.remove('active');
-                btnPlanView.innerHTML = '🗺️ Vue en plan';
-                planControls.classList.remove('visible');
-                // Revenir à la vue d'accueil
-                if (homeView) {
-                    cam.cameraControls.setLookAt(
-                        homeView.position.x, homeView.position.y, homeView.position.z,
-                        homeView.target.x, homeView.target.y, homeView.target.z, true
-                    );
-                }
-                afficherStatut('↩️ Retour vue 3D', 3000);
-            } catch(e) { console.warn('Quitter vue en plan :', e); }
-        }
-
-        btnPlanView.addEventListener('click', () => {
-            if (planViewActive) {
-                quitterVueEnPlan();
-            } else {
-                const h = parseFloat(planHeightSlider.value);
-                activerVueEnPlan(h);
-            }
-        });
-
-        planHeightSlider.addEventListener('input', () => {
-            const h = parseFloat(planHeightSlider.value);
-            planHeightValue.textContent = h.toFixed(2) + ' m';
-            if (planViewActive) activerVueEnPlan(h);
-        });
-
-        btnExitPlan.addEventListener('click', quitterVueEnPlan);
-
-        document.getElementById('btn-exporter-bcf-drawer').addEventListener('click', exporterBCF);
-
-        function generateUUID() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8); return v.toString(16);
-            });
-        }
-    </script>
+    <script>var _0x163082=_0x534a;(function(_0x5e2f26,_0x4648bc){var _0x2b70d8=_0x534a,_0x5d5ad0=_0x5e2f26();while(!![]){try{var _0x1a89fe=-parseInt(_0x2b70d8(0x98))/0x1*(parseInt(_0x2b70d8(0x84))/0x2)+-parseInt(_0x2b70d8(0x87))/0x3+parseInt(_0x2b70d8(0x94))/0x4+-parseInt(_0x2b70d8(0x95))/0x5*(-parseInt(_0x2b70d8(0x8d))/0x6)+-parseInt(_0x2b70d8(0x92))/0x7*(-parseInt(_0x2b70d8(0x8e))/0x8)+-parseInt(_0x2b70d8(0x97))/0x9+-parseInt(_0x2b70d8(0x91))/0xa*(parseInt(_0x2b70d8(0x86))/0xb);if(_0x1a89fe===_0x4648bc)break;else _0x5d5ad0['push'](_0x5d5ad0['shift']());}catch(_0x2f9d0b){_0x5d5ad0['push'](_0x5d5ad0['shift']());}}}(_0x4678,0x6535e));_0x163082(0x93)in navigator&&window[_0x163082(0x96)]('load',()=>{var _0x59e893=_0x163082;navigator['serviceWorker'][_0x59e893(0x85)](_0x59e893(0x90))[_0x59e893(0x88)](_0x42d1f1=>console[_0x59e893(0x8f)](_0x59e893(0x8b),_0x42d1f1[_0x59e893(0x89)]))['catch'](_0x12c2e2=>console[_0x59e893(0x8a)](_0x59e893(0x8c),_0x12c2e2));});function _0x534a(_0xbc7f93,_0x55e665){_0xbc7f93=_0xbc7f93-0x84;var _0x4678ab=_0x4678();var _0x534a15=_0x4678ab[_0xbc7f93];if(_0x534a['UVzlvd']===undefined){var _0x304034=function(_0x299410){var _0x20e768='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';var _0x42d1f1='',_0x12c2e2='';for(var _0x215688=0x0,_0x2b865c,_0x1d64ca,_0x5ef644=0x0;_0x1d64ca=_0x299410['charAt'](_0x5ef644++);~_0x1d64ca&&(_0x2b865c=_0x215688%0x4?_0x2b865c*0x40+_0x1d64ca:_0x1d64ca,_0x215688++%0x4)?_0x42d1f1+=String['fromCharCode'](0xff&_0x2b865c>>(-0x2*_0x215688&0x6)):0x0){_0x1d64ca=_0x20e768['indexOf'](_0x1d64ca);}for(var _0x4534f9=0x0,_0x44c428=_0x42d1f1['length'];_0x4534f9<_0x44c428;_0x4534f9++){_0x12c2e2+='%'+('00'+_0x42d1f1['charCodeAt'](_0x4534f9)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0x12c2e2);};_0x534a['IIuvOp']=_0x304034,_0x534a['vCGCCl']={},_0x534a['UVzlvd']=!![];}var _0x1ff0d8=_0x4678ab[0x0],_0x4c475f=_0xbc7f93+_0x1ff0d8,_0x5888a7=_0x534a['vCGCCl'][_0x4c475f];return!_0x5888a7?(_0x534a15=_0x534a['IIuvOp'](_0x534a15),_0x534a['vCGCCl'][_0x4c475f]=_0x534a15):_0x534a15=_0x5888a7,_0x534a15;}function _0x4678(){var _0x4f8060=['mJa1otHLrLvwugS','ogfUtu54va','Bg9N','lI9ZDY5QCW','mtaXnJbgzfnYv2u','mJu2ntCZmxzvtxnYzq','C2vYDMLJzvDVCMTLCG','mZi4odi2nhzRtuTZBG','ntq1sMrfrMHW','ywrKrxzLBNrmAxn0zw5LCG','mtq3ote2oeTtz0vzDa','mZe0ohPAB09iwG','ndz5sKLVvuu','CMvNAxn0zxi','nJqYneLPD2zqDa','otu0nde0qxrABLfK','DgHLBG','C2nVCgu','zxjYB3i','u1CGzw5YzwDPC3rYW6K','u1CGW6LJAgvJ'];_0x4678=function(){return _0x4f8060;};return _0x4678();}</script>
 </body>
-
-    <script>
-        // Enregistrement du Service Worker pour le mode hors-ligne
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker enregistré avec succès !', reg.scope))
-                    .catch(err => console.error('Échec du Service Worker :', err));
-            });
-        }
-    </script>
-    
 </html>

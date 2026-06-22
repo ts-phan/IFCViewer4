@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#007bff">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Audit BIM">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+ 
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Visionneuse BIM & Audit BCF</title>
+    
+    <script src="./lib/jszip.min.js"></script>
+    
+    <style>
+        body { margin: 0; overflow: hidden; font-family: '-apple-system', 'Segoe UI', sans-serif; background-color: #f0f0f0; }
+        #viewer-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        /* ── 1. Drawer latéral gauche ── */
+        #top-bar {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 58px);
+            left: 0;
+            width: 210px;
+            z-index: 130;
+            display: flex; flex-direction: column; gap: 8px;
+            background: rgba(255,255,255,0.97);
+            padding: 12px 14px 16px 14px;
+            box-shadow: 3px 0 20px rgba(0,0,0,0.18);
+            backdrop-filter: blur(10px);
+            transform: translateX(0);
+            transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+            overflow-y: visible;
+            box-sizing: border-box;
+            border-radius: 0 0 16px 0;
+        }
+        body.menu-closed #top-bar {
+            transform: translateX(-100%);
+        }
+        #top-bar input[type="text"] {
+            width: 100%; box-sizing: border-box;
+            padding: 9px 10px; border: 1px solid #ccc;
+            border-radius: 8px; font-size: 0.9em;
+        }
+        /* Label titre dans le drawer */
+        .drawer-label {
+            font-size: 0.7em; font-weight: 700; color: #888;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            margin-top: 4px;
+        }
+
+        /* Overlay sombre derrière le drawer (mobile) */
+        #drawer-overlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 39;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(1px);
+        }
+        body:not(.menu-closed) #drawer-overlay { display: block; }
+
+        /* ── Bouton hamburger fixe — sous le notch ── */
+        #btn-collapse-topbar {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 10px);
+            left: 10px; z-index: 50;
+            background: rgba(255,255,255,0.97);
+            border: none; border-radius: 8px;
+            width: 38px; height: 38px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            font-size: 1.1em; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s;
+        }
+        #btn-collapse-topbar:active { background: #f0f0f0; }
+
+        /* ── 2. Top-action-bar — status centré pleine largeur ── */
+        #top-action-bar {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 10px);
+            left: 0; right: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            padding: 0 14px;
+            pointer-events: none;
+        }
+        #status-bar {
+            background: rgba(0,0,0,0.6); color: white; padding: 6px 14px;
+            border-radius: 14px; font-size: 0.75em;
+            white-space: normal; overflow: hidden;
+            text-align: center; line-height: 1.3;
+            transition: opacity 0.5s ease-out;
+            opacity: 1; max-width: 60vw;
+        }
+        input[type="file"] { display: none; }
+
+        .btn-action {
+            background: #007bff; color: white; border: none; padding: 7px 10px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.78em;
+            text-align: center; white-space: nowrap; transition: 0.2s; width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+            box-sizing: border-box;
+        }
+        .btn-action:active { filter: brightness(0.9); }
+        .btn-action.success { background: #28a745; }
+        .btn-action.danger  { background: #dc3545; }
+        .btn-action.warning { background: #ffc107; color: #333; }
+
+        #btn-reset-view {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 10px);
+            right: 10px; z-index: 15; display: none;
+            background: rgba(255,255,255,0.95); border: none; border-radius: 50%;
+            width: 38px; height: 38px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            font-size: 1.1em; cursor: pointer; align-items: center; justify-content: center;
+        }
+
+        /* ── 3. Bottom-sheet collé au bas, sans notch ── */
+        #bottom-sheet {
+            position: fixed;
+            bottom: 0; left: 0; right: 0; z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        /* Liste scrollable 30vh */
+        #liste-container {
+            max-height: 25vh;
+            overflow-y: auto;
+            display: flex; flex-direction: column; gap: 0;
+            background: rgba(248,249,250,0.98);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid #e0e0e0;
+            transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1),
+                        opacity 0.25s ease;
+        }
+        #bottom-sheet.folded #liste-container {
+            max-height: 0; opacity: 0;
+            overflow: hidden; border-top: none;
+        }
+
+        /* Barre permanente — sans padding notch */
+        #sheet-bar {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 10px;
+            background: rgba(255,255,255,0.97);
+            box-shadow: 0 -3px 16px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+            min-height: 36px;
+        }
+        #sheet-bar #btn-supprimer-tout-top {
+            border: none; border-radius: 8px;
+            background: #dc3545; color: white;
+            font-size: 0.72em; font-weight: bold;
+            padding: 5px 9px; cursor: pointer;
+            display: flex; align-items: center; gap: 4px;
+            white-space: nowrap;
+            margin-left: 30px;
+        }
+        #sheet-bar #btn-supprimer-tout-top:active { filter: brightness(0.9); }
+
+        /* anciens boutons sheet-bar — conservés pour compatibilité, masqués */
+        #btn-exporter-bcf { display: none; }
+        #btn-toggle-sheet {
+            justify-self: center;
+            background: none; border: none;
+            font-weight: 700; font-size: 0.82em;
+            color: #333; cursor: pointer;
+            padding: 6px 10px; text-align: center; white-space: nowrap;
+        }
+        #btn-toggle-sheet:active { opacity: 0.7; }
+
+        /* 4. Cartes — 3 lignes + photo à droite des boutons */
+        .defaut-item {
+            background: white;
+            border-left: 3px solid #dc3545;
+            display: flex; align-items: flex-start; gap: 8px;
+            padding: 6px 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .defaut-item:last-child { border-bottom: none; }
+
+        .defaut-contenu {
+            flex: 1; min-width: 0;
+            display: flex; flex-direction: column; gap: 1px; overflow: hidden;
+        }
+        .defaut-en-tete {
+            font-weight: 700; color: #222; font-size: 0.76em;
+            display: flex; align-items: center; gap: 5px; overflow: hidden;
+        }
+        .defaut-titre-txt {
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .badge-type {
+            font-size: 0.6em; font-weight: bold; padding: 1px 5px;
+            border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+        }
+        .badge-type.Issue        { background: #cfe2ff; color: #084298; }
+        .badge-type.Warning      { background: #fff3cd; color: #856404; }
+        .badge-type.Architecte   { background: #e8d5f5; color: #6a1b9a; }
+        .badge-type.Voie         { background: #d4edda; color: #155724; }
+        .badge-type.GC           { background: #ffd8b1; color: #7a3900; }
+        .badge-type.SIG          { background: #d1ecf1; color: #0c5460; }
+        .badge-type.LAC          { background: #f8d7da; color: #721c24; }
+        .badge-type.Paysage      { background: #c8f5d0; color: #1a5c2a; }
+        .badge-type.Station      { background: #e2e3e5; color: #383d41; }
+        .defaut-date {
+            font-size: 0.63em; color: #888;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .defaut-desc {
+            font-size: 0.68em; color: #555;
+            white-space: pre-wrap; word-break: break-word;
+            overflow: visible;
+        }
+
+        /* Droite : boutons + photo côte à côte */
+        .defaut-droite {
+            display: flex; gap: 6px; align-items: center; flex-shrink: 0;
+        }
+        .defaut-outils {
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .defaut-outils-row { display: flex; gap: 4px; }
+        .btn-outil {
+            background: #f1f3f5; border: 1px solid #e0e0e0; border-radius: 6px;
+            width: 32px; height: 32px;
+            cursor: pointer; font-size: 0.95em; transition: 0.15s;
+            display: flex; align-items: center; justify-content: center; padding: 0;
+        }
+        .btn-outil:active { transform: scale(0.92); }
+        .btn-outil.supprimer { background: #ffe3e5; border-color: #dc3545; }
+
+        /* Miniature photo */
+        .defaut-img-min {
+            width: 56px; height: 56px;
+            object-fit: cover; border-radius: 6px;
+            border: 1px solid #ddd; flex-shrink: 0;
+        }
+        .defaut-img-placeholder {
+            width: 56px; height: 56px;
+            border-radius: 6px; border: 1px dashed #ccc; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3em; color: #ccc; background: #f8f9fa;
+        }
+        
+        @supports (padding-top: constant(safe-area-inset-top)) {
+            #btn-collapse-topbar { top: calc(constant(safe-area-inset-top) + 58px); }
+            #top-action-bar      { top: calc(constant(safe-area-inset-top) + 10px); }
+            #top-bar             { top: calc(constant(safe-area-inset-top) + 58px); }
+            #btn-reset-view      { top: calc(constant(safe-area-inset-top) + 58px); }
+            #btn-plan-view       { top: calc(constant(safe-area-inset-top) + 10px); }
+            #plan-controls       { top: calc(constant(safe-area-inset-top) + 56px); }
+        }
+        #modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+            z-index: 90; backdrop-filter: blur(2px);
+        }
+
+        /* 5. Fenêtres Modales */
+        .modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
+            z-index: 100; width: 90vw; max-width: 340px; box-sizing: border-box;
+        }
+        .modal input[type="text"], .modal textarea, .modal select { 
+            width: 100%; box-sizing: border-box; margin-top: 5px; margin-bottom: 12px; 
+            padding: 8px; border-radius: 6px; border: 1px solid #ccc;
+        }
+        #preview-img { width: 100%; height: 110px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; border: 1px solid #eee; background: #fafafa;}
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-actions button { flex: 1; padding: 10px; border-radius: 6px; border: none; color: white; font-weight: bold; cursor: pointer;}
+        
+        .header-media { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        #img-voir { width: 100%; max-height: 250px; object-fit: contain; border-radius: 6px; margin-bottom: 10px; background: #f8f9fa; border: 1px solid #eee; }
+
+        /* ── Vue en plan ── */
+        #btn-plan-view {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 10px);
+            right: 58px; z-index: 15;
+            background: rgba(255,255,255,0.95); border: none; border-radius: 8px;
+            height: 38px; padding: 0 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            font-size: 0.8em; font-weight: bold; cursor: pointer;
+            display: none; align-items: center; gap: 5px;
+            transition: background 0.15s;
+        }
+        #btn-plan-view.active { background: #007bff; color: white; }
+        #btn-plan-view:active { filter: brightness(0.9); }
+
+        #plan-controls {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 56px);
+            right: 10px; z-index: 15;
+            background: rgba(255,255,255,0.97);
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            padding: 10px 14px;
+            display: none;
+            flex-direction: column; gap: 8px;
+            min-width: 180px;
+        }
+        #plan-controls.visible { display: flex; }
+        .plan-ctrl-label { font-size: 0.7em; font-weight: 700; color: #555; text-transform: uppercase; }
+        #plan-height-slider { width: 100%; }
+        #plan-height-value { font-size: 0.75em; color: #007bff; font-weight: bold; text-align: center; }
+        #btn-exit-plan {
+            background: #dc3545; color: white; border: none; border-radius: 6px;
+            padding: 6px; font-size: 0.75em; font-weight: bold; cursor: pointer;
+        }
+    </style>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "./lib/three.module.js",
+                "web-ifc-viewer": "./lib/web-ifc-viewer.js"
+            }
+        }
+    </script>
+</head>
+<body class="menu-closed">
+
+    <!-- Overlay sombre derrière le drawer -->
+    <div id="drawer-overlay"></div>
+
+    <!-- Bouton hamburger toujours visible -->
+    <button id="btn-collapse-topbar" title="Menu">☰</button>
+
+    <!-- Drawer latéral gauche -->
+    <div id="top-bar">
+        <button class="btn-action" id="btn-exemple">📦 Exemple</button>
+        <button class="btn-action warning" id="btn-nouveau">✨ Nouveau projet</button>
+        <label class="btn-action">📂 Charger IFC<input type="file" id="upload-ifc" accept=".ifc,.ifczip,application/octet-stream" onchange="if(this.files[0]&&!/\.(ifc|ifczip)$/i.test(this.files[0].name)){alert('Format non supporté. Choisissez un fichier .ifc ou .ifczip');this.value=''}"></label>
+        <label class="btn-action">📥 Importer BCF<input type="file" id="upload-bcf" accept=".bcf,.bcfzip,.zip" onchange="(function(i){const f=i.files[0];if(!f)return;if(!/\.(bcf|bcfzip|bcfzip\.zip)$/i.test(f.name)){alert('Format non supporté. Choisissez un fichier .bcf, .bcfzip ou .bcfzip.zip');i.value=''};})(this)"></label>
+        <span class="drawer-label" style="margin-top:6px">Annotations</span>
+        <input type="text" id="nom-projet" placeholder="Nom du projet...">
+        <button class="btn-action success" id="btn-exporter-bcf-drawer">💾 Exporter BCF</button>
+    </div>
+
+    <!-- Barre top : status uniquement -->
+    <div id="top-action-bar">
+        <div id="status-bar">👈 Cliquez ici pour choisir une maquette</div>
+    </div>
+    <button id="btn-reset-view" title="Vue globale">🏠</button>
+    <button id="btn-plan-view" title="Vue en plan">🗺️ Vue en plan</button>
+    <div id="plan-controls">
+        <div class="plan-ctrl-label">Hauteur de coupe</div>
+        <input type="range" id="plan-height-slider" min="0" max="50" step="0.1" value="1.2">
+        <div id="plan-height-value">1.20 m</div>
+        <button id="btn-exit-plan">✖ Quitter la vue en plan</button>
+    </div>
+
+    <div id="bottom-sheet">
+        <div id="liste-container"></div>
+        <div id="sheet-bar">
+            <button id="btn-supprimer-tout-top" title="Supprimer toutes les annotations">🗑 Supprimer tout</button>
+            <button id="btn-toggle-sheet">▼ Annotations (0)</button>
+        </div>
+    </div>
+
+    <div id="modal-overlay"></div>
+
+    <div id="modal-annotation" class="modal">
+        <h3 id="titre-modal-form" style="margin-top:0; font-size: 1.1em; margin-bottom: 10px;">Nouveau Défaut</h3>
+        
+        <div class="header-media">
+            <span style="font-size:0.85em; font-weight:bold;">Image (3D ou Photo)</span>
+            <label class="btn-action" style="padding: 4px 8px; font-size: 0.8em; margin:0;">
+                📷 Prendre photo
+                <input type="file" id="upload-photo" accept="image/*" capture="environment">
+            </label>
+        </div>
+        <img id="preview-img" src="" alt="Capture">
+        
+        <label style="font-size:0.85em; font-weight:bold;">Titre & Type</label>
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="titre-defaut" placeholder="Ex: Fissure..." style="flex:2;">
+            <select id="type-defaut" style="flex:1;">
+                <option value="Issue">🔵 Issue</option>
+                <option value="Warning">⚠️ Alerte</option>
+                <option value="Architecte">🟣 Architecte</option>
+                <option value="Voie">🟢 Voie</option>
+                <option value="GC">🟠 GC</option>
+                <option value="SIG">🔷 SIG</option>
+                <option value="LAC">🔴 LAC</option>
+                <option value="Paysage">🌿 Paysage</option>
+                <option value="Station">⬜ Station</option>
+            </select>
+        </div>
+        
+        <label style="font-size:0.85em; font-weight:bold;">Description</label>
+        <textarea id="desc-defaut" rows="3"></textarea>
+        
+        <div class="modal-actions">
+            <button id="btn-annuler-defaut" style="background:#6c757d;">Annuler</button>
+            <button id="btn-valider-defaut" style="background:#28a745;">Valider</button>
+        </div>
+    </div>
+
+    <div id="modal-voir" class="modal">
+        <h3 id="titre-voir" style="margin-top:0; font-size: 1.1em; margin-bottom: 5px;"></h3>
+        <img id="img-voir" src="" alt="Aperçu">
+        <div id="desc-voir" style="white-space: pre-wrap; font-size: 0.9em; color: #444; margin-bottom: 15px; max-height: 150px; overflow-y: auto;"></div>
+        <div class="modal-actions">
+            <button id="btn-fermer-voir" style="background:#007bff; width: 100%;">Fermer</button>
+        </div>
+    </div>
+
+    <div id="viewer-container"></div>
+
+    <script type="module">
+        import { Color, Mesh, SphereGeometry, MeshBasicMaterial, Vector3, Plane } from 'three';
+        import { IfcViewerAPI } from 'web-ifc-viewer';
+
+        const container = document.getElementById('viewer-container');
+        const viewer = new IfcViewerAPI({ container, backgroundColor: new Color(0xf4f7f6) });
+        viewer.grid.setGrid();
+        viewer.IFC.setWasmPath('./lib/');
+
+        let listeDefauts = [];
+        let donneeTemp = null; 
+        let idEditionEnCours = null; 
+        let homeView = null; 
+
+        // ── Couleurs par type ──
+        const TYPE_COLORS = {
+            Issue:      0x084298,
+            Warning:    0xffc107,
+            Architecte: 0x9c27b0,
+            Voie:       0x28a745,
+            GC:         0xff8c00,
+            SIG:        0x17a2b8,
+            LAC:        0xdc3545,
+            Paysage:    0x2e7d32,
+            Station:    0x6c757d,
+        };
+        const TYPE_LABELS = {
+            Issue:      '🔵 Issue',
+            Warning:    '⚠️ Alerte',
+            Architecte: '🟣 Architecte',
+            Voie:       '🟢 Voie',
+            GC:         '🟠 GC',
+            SIG:        '🔷 SIG',
+            LAC:        '🔴 LAC',
+            Paysage:    '🌿 Paysage',
+            Station:    '⬜ Station',
+        };
+
+        function getMateriau(type) {
+            const color = TYPE_COLORS[type] ?? TYPE_COLORS.Issue;
+            return new MeshBasicMaterial({ color });
+        }
+
+        const geometrieMarqueur = new SphereGeometry(0.25, 16, 16);
+
+        // --- PERSISTANCE localStorage ---
+        const LS_KEY = 'auditBIM_defauts';
+        const LS_NOM = 'auditBIM_nomProjet';
+
+        function sauvegarder() {
+            // On sérialise sans mesh3D (non sérialisable)
+            const data = listeDefauts.map(d => {
+                const { mesh3D, ...rest } = d;
+                return rest;
+            });
+            try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch(e) { console.warn('localStorage plein', e); }
+            const nom = document.getElementById('nom-projet').value;
+            if (nom) localStorage.setItem(LS_NOM, nom);
+        }
+
+        function chargerDepuisLocalStorage() {
+            try {
+                const nomSauve = localStorage.getItem(LS_NOM);
+                if (nomSauve) document.getElementById('nom-projet').value = nomSauve;
+                const raw = localStorage.getItem(LS_KEY);
+                if (!raw) return;
+                const data = JSON.parse(raw);
+                listeDefauts = data; // mesh3D sera null, recréé après chargement IFC
+                rafraichirListeDefauts();
+                afficherStatut(`📂 ${listeDefauts.length} annotation(s) restaurée(s)`, 5000);
+            } catch(e) { console.warn('Erreur restauration', e); }
+        }
+
+        // Recrée les marqueurs 3D pour les défauts déjà en mémoire (après chargement IFC)
+        function recreerMarqueurs() {
+            listeDefauts.forEach(def => {
+                if (def.x !== undefined && !isNaN(def.x) && !def.mesh3D) {
+                    const marqueur = new Mesh(geometrieMarqueur, getMateriau(def.type || "Issue"));
+                    marqueur.position.set(def.x, def.y, def.z);
+                    viewer.context.getScene().add(marqueur);
+                    def.mesh3D = marqueur;
+                }
+            });
+        }
+
+        const bottomSheet = document.getElementById('bottom-sheet');
+        const btnToggleSheet = document.getElementById('btn-toggle-sheet');
+        let isSheetFolded = false;  // déplié par défaut
+        
+        let timeoutStatut;
+
+        // État initial de la barre (avant restauration)
+        majTexteTiroir();
+
+        // Restaurer au démarrage
+        chargerDepuisLocalStorage();
+
+        // Sauvegarder le nom de projet à chaque frappe
+        document.getElementById('nom-projet').addEventListener('input', sauvegarder);
+
+        // --- Gestion de la barre de statut (masquage automatique) ---
+        function afficherStatut(message, autoHideMs = 0) {
+            const sb = document.getElementById('status-bar');
+            sb.textContent = message;
+            sb.style.display = 'block';
+            sb.style.opacity = '1';
+            
+            clearTimeout(timeoutStatut);
+            if(autoHideMs > 0) {
+                timeoutStatut = setTimeout(() => {
+                    sb.style.opacity = '0'; // Déclenche la transition CSS
+                    setTimeout(() => sb.style.display = 'none', 500); // Retire l'élément après fondu
+                }, autoHideMs);
+            }
+        }
+
+        document.getElementById('btn-nouveau').addEventListener('click', () => {
+            if(confirm("Créer un nouveau projet ? Cela déchargera la maquette IFC et effacera l'audit en cours.")) {
+                localStorage.removeItem(LS_KEY);
+                localStorage.removeItem(LS_NOM);
+                window.location.reload(); 
+            }
+        });
+
+        // --- Drawer latéral : fermé par défaut ---
+        const btnCollapseTopbar = document.getElementById('btn-collapse-topbar');
+        const drawerOverlay = document.getElementById('drawer-overlay');
+        document.body.classList.add('menu-closed');  // fermé par défaut
+
+        function toggleDrawer() {
+            document.body.classList.toggle('menu-closed');
+        }
+        btnCollapseTopbar.addEventListener('click', toggleDrawer);
+        drawerOverlay.addEventListener('click', toggleDrawer);
+
+        document.getElementById('upload-photo').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64 = e.target.result;
+                document.getElementById('preview-img').src = base64;
+                if(donneeTemp) donneeTemp.image = base64;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        btnToggleSheet.addEventListener('click', () => {
+            isSheetFolded = !isSheetFolded;
+            if (isSheetFolded) { bottomSheet.classList.add('folded'); } 
+            else { bottomSheet.classList.remove('folded'); }
+            majTexteTiroir();
+        });
+
+        function majTexteTiroir() {
+            const n = listeDefauts.length;
+            if (isSheetFolded) {
+                btnToggleSheet.innerHTML = `▲ Annotations (${n})`;
+            } else {
+                btnToggleSheet.innerHTML = `▼ Annotations (${n})`;
+            }
+        }
+
+        function gererAffichageBoutons() {
+            // La barre est toujours visible — on ne masque jamais #bottom-sheet
+            majTexteTiroir();
+        }
+
+        document.getElementById('btn-reset-view').addEventListener('click', () => {
+            if (homeView) {
+                viewer.context.ifcCamera.cameraControls.setLookAt(
+                    homeView.position.x, homeView.position.y, homeView.position.z,
+                    homeView.target.x, homeView.target.y, homeView.target.z,
+                    true 
+                );
+            }
+        });
+
+        // --- CHARGEMENT IFC ---
+        document.getElementById('btn-exemple').addEventListener('click', async () => {
+            afficherStatut("⏳ Chargement de l'exemple IFC...");
+            try {
+                // Décharger les annotations BCF en cours
+                listeDefauts.forEach(def => { if (def.mesh3D) viewer.context.getScene().remove(def.mesh3D); });
+                listeDefauts = [];
+                rafraichirListeDefauts();
+
+                // Charger le .ifczip sample
+                const reponseIfc = await fetch('./sample/sample.ifczip');
+                if (!reponseIfc.ok) throw new Error('sample.ifczip introuvable');
+                const ifcBlob = await reponseIfc.blob();
+                const ifcZip = await JSZip.loadAsync(ifcBlob);
+                const nomIfc = Object.keys(ifcZip.files).find(n => n.toLowerCase().endsWith('.ifc'));
+                if (!nomIfc) throw new Error('Pas de fichier .ifc dans sample.ifczip');
+                const ifcFileBlob = await ifcZip.files[nomIfc].async("blob");
+                const ifcFichier = new File([ifcFileBlob], nomIfc, { type: "application/octet-stream" });
+                const ifcUrl = URL.createObjectURL(ifcFichier);
+                await viewer.IFC.loadIfcUrl(ifcUrl, true);
+
+                const camControls = viewer.context.ifcCamera.cameraControls;
+                const p = new Vector3(); const t = new Vector3();
+                camControls.getPosition(p); camControls.getTarget(t);
+                homeView = { position: p, target: t };
+                document.getElementById('btn-reset-view').style.display = 'flex';
+                document.getElementById('btn-plan-view').style.display = 'flex';
+                document.body.classList.add('menu-closed');
+
+                afficherStatut("⏳ Chargement des annotations BCF...");
+
+                // Charger le BCF sample
+                try {
+                    const reponseBcf = await fetch('./sample/sample.bcfzip');
+                    if (!reponseBcf.ok) throw new Error('BCF introuvable');
+                    const bcfBlob = await reponseBcf.blob();
+                    const zip = await JSZip.loadAsync(bcfBlob);
+                    const defautsParGuid = {};
+                    for (const path in zip.files) {
+                        if (zip.files[path].dir) continue;
+                        if (path === 'project.bcf') {
+                            const xml = await zip.files[path].async("string");
+                            const doc = new DOMParser().parseFromString(xml, "text/xml");
+                            const nom = doc.querySelector("Name")?.textContent;
+                            if (nom) document.getElementById('nom-projet').value = nom;
+                            continue;
+                        }
+                        const parts = path.split('/');
+                        const guid = parts[0];
+                        if (!guid || path.indexOf('/') === -1) continue;
+                        if (!defautsParGuid[guid]) defautsParGuid[guid] = { id: guid, type: "Issue" };
+                        if (path.endsWith('markup.bcf')) {
+                            const xml = await zip.files[path].async("string");
+                            const doc = new DOMParser().parseFromString(xml, "text/xml");
+                            defautsParGuid[guid].titre = doc.querySelector("Title")?.textContent || "Défaut";
+                            let desc = doc.querySelector("Description")?.textContent || "";
+                            const m = desc.match(/\[LASER:([^;]+);([^;]+);([^\]]+)\]/);
+                            if (m) { defautsParGuid[guid].x = parseFloat(m[1]); defautsParGuid[guid].y = parseFloat(m[2]); defautsParGuid[guid].z = parseFloat(m[3]); desc = desc.replace(m[0], '').trim(); }
+                            defautsParGuid[guid].desc = desc;
+                        } else if (path.endsWith('viewpoint.bcfv')) {
+                            const xml = await zip.files[path].async("string");
+                            const doc = new DOMParser().parseFromString(xml, "text/xml");
+                            const pos = doc.querySelector("CameraViewPoint");
+                            const dir = doc.querySelector("CameraDirection");
+                            if (pos && dir) {
+                                // Reconversion BCF (Z=haut) → Three.js (Y=haut) : (X,Y,Z) → (X,Z,-Y)
+                                const pX = parseFloat(pos.querySelector("X").textContent);
+                                const pY = parseFloat(pos.querySelector("Y").textContent);
+                                const pZ = parseFloat(pos.querySelector("Z").textContent);
+                                defautsParGuid[guid].camX =  pX;
+                                defautsParGuid[guid].camY =  pZ;
+                                defautsParGuid[guid].camZ = -pY;
+                                const dX = parseFloat(dir.querySelector("X").textContent);
+                                const dY = parseFloat(dir.querySelector("Y").textContent);
+                                const dZ = parseFloat(dir.querySelector("Z").textContent);
+                                defautsParGuid[guid].dirX =  dX;
+                                defautsParGuid[guid].dirY =  dZ;
+                                defautsParGuid[guid].dirZ = -dY;
+                                defautsParGuid[guid].upX = 0;
+                                defautsParGuid[guid].upY = 1;
+                                defautsParGuid[guid].upZ = 0;
+                            }
+                        } else if (path.endsWith('snapshot.png')) {
+                            const b = await zip.files[path].async("blob");
+                            await new Promise(resolve => {
+                                const reader = new FileReader();
+                                reader.readAsDataURL(b);
+                                reader.onloadend = () => { defautsParGuid[guid].image = reader.result; resolve(); };
+                            });
+                        }
+                    }
+                    Object.values(defautsParGuid).forEach(def => {
+                        if (def.titre) {
+                            if (def.x !== undefined && !isNaN(def.x)) {
+                                const marqueur = new Mesh(geometrieMarqueur, getMateriau(def.type || "Issue"));
+                                marqueur.position.set(def.x, def.y, def.z);
+                                viewer.context.getScene().add(marqueur);
+                                def.mesh3D = marqueur;
+                            }
+                            listeDefauts.push(def);
+                        }
+                    });
+                    rafraichirListeDefauts();
+                    afficherStatut("✅ Exemple chargé — " + listeDefauts.length + " annotation(s). Double-cliquez pour annoter.", 15000);
+                } catch(eBcf) {
+                    afficherStatut("✅ Exemple chargé. Double-cliquez pour annoter.", 15000);
+                }
+            } catch (err) { alert("Erreur chargement exemple : " + err.message); }
+        });
+
+        document.getElementById('upload-ifc').addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            afficherStatut("⏳ Chargement de la maquette...");
+            try {
+                // Décharger les annotations BCF en cours
+                listeDefauts.forEach(def => { if (def.mesh3D) viewer.context.getScene().remove(def.mesh3D); });
+                listeDefauts = [];
+                rafraichirListeDefauts();
+
+                let fichierFinal = file; 
+                if (file.name.toLowerCase().endsWith('.ifczip')) {
+                    const zip = await JSZip.loadAsync(file);
+                    let nomIfc = Object.keys(zip.files).find(n => n.toLowerCase().endsWith('.ifc'));
+                    const blob = await zip.files[nomIfc].async("blob");
+                    fichierFinal = new File([blob], nomIfc, { type: "application/octet-stream" });
+                }
+                const url = URL.createObjectURL(fichierFinal);
+                await viewer.IFC.loadIfcUrl(url, true);
+                event.target.value = '';
+                
+                const camControls = viewer.context.ifcCamera.cameraControls;
+                const p = new Vector3();
+                const t = new Vector3();
+                camControls.getPosition(p);
+                camControls.getTarget(t);
+                homeView = { position: p, target: t };
+                document.getElementById('btn-reset-view').style.display = 'flex';
+                document.getElementById('btn-plan-view').style.display = 'flex';
+
+                // Fermer le drawer latéral
+                document.body.classList.add('menu-closed');
+
+                afficherStatut("✅ Maquette chargée. Double-cliquez pour annoter.", 15000);
+            } catch (err) { alert("Erreur IFC : " + err.message); } 
+        });
+
+        // --- IMPORT BCF ---
+        document.getElementById('upload-bcf').addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            afficherStatut("📂 Lecture du BCF...");
+            try {
+                const zip = await JSZip.loadAsync(file);
+                const defautsParGuid = {};
+                for (const path in zip.files) {
+                    if (zip.files[path].dir) continue;
+                    if (path === 'project.bcf') {
+                        const xml = await zip.files[path].async("string");
+                        const doc = new DOMParser().parseFromString(xml, "text/xml");
+                        const nomProjetExtrait = doc.querySelector("Name")?.textContent;
+                        if (nomProjetExtrait) document.getElementById('nom-projet').value = nomProjetExtrait;
+                        continue;
+                    }
+                    const parts = path.split('/');
+                    const guid = parts[0];
+                    if (!guid || path.indexOf('/') === -1) continue; 
+                    if (!defautsParGuid[guid]) defautsParGuid[guid] = { id: guid, type: "Issue" };
+
+                    if (path.endsWith('markup.bcf')) {
+                        const xml = await zip.files[path].async("string");
+                        const doc = new DOMParser().parseFromString(xml, "text/xml");
+                        defautsParGuid[guid].titre = doc.querySelector("Title")?.textContent || "Défaut";
+                        let descriptionReelle = doc.querySelector("Description")?.textContent || "";
+                        const matchLaser = descriptionReelle.match(/\[LASER:([^;]+);([^;]+);([^\]]+)\]/);
+                        if (matchLaser) {
+                            defautsParGuid[guid].x = parseFloat(matchLaser[1]);
+                            defautsParGuid[guid].y = parseFloat(matchLaser[2]);
+                            defautsParGuid[guid].z = parseFloat(matchLaser[3]);
+                            descriptionReelle = descriptionReelle.replace(matchLaser[0], '').trim();
+                        }
+                        defautsParGuid[guid].desc = descriptionReelle;
+                    } else if (path.endsWith('viewpoint.bcfv')) {
+                        const xml = await zip.files[path].async("string");
+                        const doc = new DOMParser().parseFromString(xml, "text/xml");
+                        const pos = doc.querySelector("CameraViewPoint");
+                        const dir = doc.querySelector("CameraDirection");
+                        if (pos && dir) {
+                            // Reconversion BCF (Z=haut) → Three.js (Y=haut) : (X,Y,Z) → (X,Z,-Y)
+                            const pX = parseFloat(pos.querySelector("X").textContent);
+                            const pY = parseFloat(pos.querySelector("Y").textContent);
+                            const pZ = parseFloat(pos.querySelector("Z").textContent);
+                            defautsParGuid[guid].camX =  pX;
+                            defautsParGuid[guid].camY =  pZ;
+                            defautsParGuid[guid].camZ = -pY;
+                            const dX = parseFloat(dir.querySelector("X").textContent);
+                            const dY = parseFloat(dir.querySelector("Y").textContent);
+                            const dZ = parseFloat(dir.querySelector("Z").textContent);
+                            defautsParGuid[guid].dirX =  dX;
+                            defautsParGuid[guid].dirY =  dZ;
+                            defautsParGuid[guid].dirZ = -dY;
+                            // upVector Three.js toujours (0,1,0)
+                            defautsParGuid[guid].upX = 0;
+                            defautsParGuid[guid].upY = 1;
+                            defautsParGuid[guid].upZ = 0;
+                        }
+                    } else if (path.endsWith('snapshot.png')) {
+                        // Lecture async correcte : convertir en Promise pour attendre la fin
+                        const blob = await zip.files[path].async("blob");
+                        await new Promise(resolve => {
+                            const reader = new FileReader();
+                            reader.readAsDataURL(blob);
+                            reader.onloadend = () => { defautsParGuid[guid].image = reader.result; resolve(); }
+                        });
+                    }
+                }
+                Object.values(defautsParGuid).forEach(def => {
+                    if(def.titre) {
+                        if (def.x !== undefined && !isNaN(def.x)) {
+                            const marqueur = new Mesh(geometrieMarqueur, getMateriau(def.type || "Issue"));
+                            marqueur.position.set(def.x, def.y, def.z);
+                            viewer.context.getScene().add(marqueur);
+                            def.mesh3D = marqueur;
+                        }
+                        listeDefauts.push(def);
+                    }
+                });
+                rafraichirListeDefauts();
+                isSheetFolded = false;
+                bottomSheet.classList.remove('folded');
+                event.target.value = '';
+                document.body.classList.add('menu-closed');
+                afficherStatut("✅ BCF Importé — " + listeDefauts.length + " annotation(s).", 15000);
+            } catch (err) { alert("Erreur BCF"); console.error(err); }
+        });
+
+        // --- ANNOTATION (Double Clic) ---
+        window.addEventListener('dblclick', async (event) => {
+            if(event.target.closest('#top-bar') || event.target.closest('.modal') || event.target.closest('#bottom-sheet') || event.target.closest('.btn-action') || event.target.closest('#btn-reset-view')) return;
+            const intersection = viewer.context.castRayIfc(event);
+            if (!intersection) return; 
+
+            const pointHit = intersection.point;
+            const cam = viewer.context.ifcCamera.cameraControls.camera;
+            const camPos = cam.position.clone();
+            const camDir = new Vector3();
+            cam.getWorldDirection(camDir);
+            const camUp = cam.up.clone();
+
+            const renderer = viewer.context.getRenderer();
+            const scene = viewer.context.getScene();
+            renderer.render(scene, cam);
+            const canvas = document.querySelector('canvas');
+            const imageBase64 = canvas.toDataURL("image/png");
+
+            idEditionEnCours = null; 
+            document.getElementById('titre-modal-form').textContent = "Nouveau Défaut";
+
+            donneeTemp = {
+                id: generateUUID(),
+                x: pointHit.x, y: pointHit.y, z: pointHit.z,
+                camX: camPos.x, camY: camPos.y, camZ: camPos.z,
+                dirX: camDir.x, dirY: camDir.y, dirZ: camDir.z,
+                upX: camUp.x, upY: camUp.y, upZ: camUp.z,
+                image: imageBase64
+            };
+
+            const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            const dateStr = new Date().toLocaleDateString('fr-FR', optionsDate);
+
+            document.getElementById('preview-img').src = imageBase64;
+            document.getElementById('titre-defaut').value = "";
+            document.getElementById('desc-defaut').value = `${dateStr}\n- `; 
+            ouvrirModal(document.getElementById('modal-annotation'));
+        });
+
+        document.getElementById('btn-annuler-defaut').addEventListener('click', () => { 
+            fermerModals();
+            donneeTemp = null; 
+            idEditionEnCours = null;
+        });
+
+        document.getElementById('btn-fermer-voir').addEventListener('click', () => { 
+            fermerModals();
+        });
+
+        document.getElementById('btn-valider-defaut').addEventListener('click', () => {
+            const titreVal = document.getElementById('titre-defaut').value || "Défaut";
+            const descVal = document.getElementById('desc-defaut').value;
+            const typeVal = document.getElementById('type-defaut').value;
+            const imgVal = document.getElementById('preview-img').src;
+
+            if (idEditionEnCours) {
+                const defToEdit = listeDefauts.find(d => d.id === idEditionEnCours);
+                if (defToEdit) {
+                    defToEdit.titre = titreVal;
+                    defToEdit.desc = descVal;
+                    defToEdit.type = typeVal;
+                    if(imgVal.length > 100) defToEdit.image = imgVal;
+                    // Mettre à jour la couleur du marqueur 3D
+                    if (defToEdit.mesh3D) {
+                        defToEdit.mesh3D.material = getMateriau(typeVal);
+                    }
+                }
+            } else {
+                if (!donneeTemp) return;
+                donneeTemp.titre = titreVal;
+                donneeTemp.desc = descVal;
+                donneeTemp.type = typeVal;
+
+                const marqueur = new Mesh(geometrieMarqueur, getMateriau(typeVal || "Issue"));
+                marqueur.position.set(donneeTemp.x, donneeTemp.y, donneeTemp.z);
+                viewer.context.getScene().add(marqueur);
+                
+                donneeTemp.mesh3D = marqueur;
+                listeDefauts.push(donneeTemp);
+                
+                isSheetFolded = false;
+                bottomSheet.classList.remove('folded');
+            }
+
+            rafraichirListeDefauts();
+            fermerModals();
+            donneeTemp = null;
+            idEditionEnCours = null;
+            document.getElementById('upload-photo').value = ""; 
+        });
+
+        // --- GESTION OVERLAY ---
+        const overlay = document.getElementById('modal-overlay');
+        function ouvrirModal(el) { el.style.display = 'block'; overlay.style.display = 'block'; }
+        function fermerModals() { 
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            overlay.style.display = 'none';
+        }
+        overlay.addEventListener('click', () => { fermerModals(); donneeTemp = null; idEditionEnCours = null; });
+
+        // --- AFFICHAGE DE LA LISTE ---
+        function rafraichirListeDefauts() {
+            const conteneur = document.getElementById('liste-container');
+            conteneur.innerHTML = '';
+            
+            listeDefauts.forEach(def => {
+                const div = document.createElement('div');
+                div.className = "defaut-item";
+
+                // Extraire la date du début de la description
+                const descLines = (def.desc || "").split('\n');
+                const premiereLigne = descLines[0] || "";
+                const isDateLine = /^\w+\s+\d+\s+\w+/.test(premiereLigne) || premiereLigne.includes('à ');
+                const dateAffichee = isDateLine ? premiereLigne : "—";
+                const descSansDate = isDateLine ? descLines.slice(1).join('\n').trim() : def.desc || "";
+                const descAffichee = descSansDate && descSansDate !== '-' ? descSansDate : '—';
+
+                const badgeClass = def.type || 'Issue';
+                const badgeLabel = TYPE_LABELS[def.type] || ('🔵 ' + (def.type || 'Issue'));
+
+                const imgHtml = def.image
+                    ? `<img class="defaut-img-min" src="${def.image}">`
+                    : `<div class="defaut-img-placeholder">📷</div>`;
+
+                div.innerHTML = `
+                    <div class="defaut-contenu">
+                        <div class="defaut-en-tete">
+                            <span class="defaut-titre-txt">${def.titre}</span>
+                            <span class="badge-type ${badgeClass}">${badgeLabel}</span>
+                        </div>
+                        <div class="defaut-date">${dateAffichee}</div>
+                        <div class="defaut-desc">${descAffichee}</div>
+                    </div>
+                    <div class="defaut-droite">
+                        <div class="defaut-outils">
+                            <div class="defaut-outils-row">
+                                <button class="btn-outil btn-voler" title="Localiser">📍</button>
+                                <button class="btn-outil btn-editer" title="Éditer">✏️</button>
+                            </div>
+                            <div class="defaut-outils-row">
+                                <button class="btn-outil btn-voir" title="Voir détails">👁️</button>
+                                <button class="btn-outil supprimer btn-supprimer-croix" title="Supprimer">🗑️</button>
+                            </div>
+                        </div>
+                        ${imgHtml}
+                    </div>
+                `;
+
+                div.querySelector('.btn-voler').addEventListener('click', () => {
+                    if (def.camX !== undefined) {
+                        viewer.context.ifcCamera.cameraControls.setLookAt(
+                            def.camX, def.camY, def.camZ, def.camX + def.dirX, def.camY + def.dirY, def.camZ + def.dirZ, true 
+                        );
+                    }
+                });
+
+                div.querySelector('.btn-editer').addEventListener('click', () => {
+                    idEditionEnCours = def.id;
+                    document.getElementById('titre-modal-form').textContent = "Modifier le Défaut";
+                    document.getElementById('titre-defaut').value = def.titre;
+                    document.getElementById('desc-defaut').value = def.desc || "";
+                    document.getElementById('type-defaut').value = def.type || "Issue";
+                    document.getElementById('preview-img').src = def.image || "";
+                    ouvrirModal(document.getElementById('modal-annotation'));
+                });
+
+                div.querySelector('.btn-voir').addEventListener('click', () => {
+                    document.getElementById('titre-voir').textContent = def.titre;
+                    document.getElementById('desc-voir').textContent = def.desc || "Aucune description.";
+                    const imgVoir = document.getElementById('img-voir');
+                    if (def.image) {
+                        imgVoir.src = def.image;
+                        imgVoir.style.display = 'block';
+                    } else {
+                        imgVoir.style.display = 'none';
+                    }
+                    ouvrirModal(document.getElementById('modal-voir'));
+                });
+
+                div.querySelector('.btn-supprimer-croix').addEventListener('click', () => {
+                    if(confirm("Supprimer ce défaut ?")) {
+                        listeDefauts = listeDefauts.filter(d => d.id !== def.id);
+                        if (def.mesh3D) { viewer.context.getScene().remove(def.mesh3D); }
+                        rafraichirListeDefauts();
+                    }
+                });
+
+                conteneur.appendChild(div);
+            });
+            
+            gererAffichageBoutons();
+            sauvegarder();
+            if(!idEditionEnCours) setTimeout(() => { conteneur.scrollTop = conteneur.scrollHeight; }, 50);
+        }
+
+        document.getElementById('btn-supprimer-tout-top').addEventListener('click', () => {
+            if(confirm("Tout supprimer ?")) {
+                listeDefauts.forEach(def => { if (def.mesh3D) viewer.context.getScene().remove(def.mesh3D); });
+                listeDefauts = [];
+                rafraichirListeDefauts();
+            }
+        });
+
+        async function exporterBCF() {
+            if (listeDefauts.length === 0) return;
+            const zip = new JSZip();
+            zip.file("bcf.version", `<?xml version="1.0" encoding="UTF-8"?><Version VersionId="2.1"/>`);
+
+            const nomProjet = document.getElementById('nom-projet').value || "Projet_Sans_Nom";
+            zip.file("project.bcf", `<?xml version="1.0" encoding="UTF-8"?><ProjectExtension><Project><ProjectId>${generateUUID()}</ProjectId><Name>${nomProjet}</Name></Project></ProjectExtension>`);
+
+            listeDefauts.forEach((def, index) => {
+                const folder = zip.folder(def.id);
+                // [LASER] garde les coords Three.js natives (Y=haut) pour la réimportation PWA
+                const codeLaser = def.x !== undefined ? `\n\n[LASER:${def.x.toFixed(4)};${def.y.toFixed(4)};${def.z.toFixed(4)}]` : "";
+
+                folder.file("markup.bcf", `<?xml version="1.0" encoding="UTF-8"?><Markup><Topic Guid="${def.id}" TopicType="${def.type}" TopicStatus="Open"><Title>${def.titre}</Title><Index>${index+1}</Index><CreationDate>${new Date().toISOString()}</CreationDate><CreationAuthor>Auditeur</CreationAuthor><Description>${(def.desc || "") + codeLaser}</Description></Topic></Markup>`);
+
+                if (def.camX !== undefined) {
+                    // Conversion Three.js (Y=haut) → IFC/BCF (Z=haut)
+                    // Position : (X, Y, Z) → (X, -Z, Y)
+                    // Direction : (X, Y, Z) → (X, -Z, Y)
+                    // UpVector : (0,1,0) → (0,0,1)
+                    const posX =  def.camX, posY = -def.camZ, posZ =  def.camY;
+                    const dirX =  def.dirX, dirY = -def.dirZ, dirZ =  def.dirY;
+                    folder.file("viewpoint.bcfv", `<?xml version="1.0" encoding="UTF-8"?><VisualizationInfo><PerspectiveCamera><CameraViewPoint><X>${posX}</X><Y>${posY}</Y><Z>${posZ}</Z></CameraViewPoint><CameraDirection><X>${dirX}</X><Y>${dirY}</Y><Z>${dirZ}</Z></CameraDirection><CameraUpVector><X>0</X><Y>0</Y><Z>1</Z></CameraUpVector><FieldOfView>60</FieldOfView></PerspectiveCamera></VisualizationInfo>`);
+                }
+
+                if (def.image) {
+                    const imgData = def.image.split(',')[1];
+                    const byteString = atob(imgData);
+                    const ab = new ArrayBuffer(byteString.length);
+                    const ia = new Uint8Array(ab);
+                    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+                    folder.file("snapshot.png", ab);
+                }
+            });
+
+            const content = await zip.generateAsync({ type: "blob" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(content);
+            link.download = `Audit_${nomProjet.replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date().toISOString().slice(0,10)}.bcfzip`;
+            link.click();
+        }
+
+        // ── VUE EN PLAN ──
+        let planViewActive = false;
+        let planClipPlane = null;
+        const btnPlanView = document.getElementById('btn-plan-view');
+        const planControls = document.getElementById('plan-controls');
+        const planHeightSlider = document.getElementById('plan-height-slider');
+        const planHeightValue = document.getElementById('plan-height-value');
+        const btnExitPlan = document.getElementById('btn-exit-plan');
+
+        function activerVueEnPlan(hauteur) {
+            try {
+                // 1. Caméra orthographique (vue plate, pas de perspective)
+                const cam = viewer.context.ifcCamera;
+                if (!planViewActive) {
+                    cam.toggleProjection(); // passe en ortho
+                }
+                // 2. Positionner la caméra au-dessus, regardant vers le bas
+                cam.cameraControls.setLookAt(0, 100, 0, 0, 0, 0, true);
+
+                // 3. Coupe horizontale à la hauteur choisie
+                const renderer = viewer.context.getRenderer();
+                // Retirer l'ancienne coupe si elle existe
+                if (planClipPlane) {
+                    renderer.clippingPlanes = [];
+                    planClipPlane = null;
+                }
+                // Plan de coupe horizontal (normal vers le bas) à Y = hauteur
+                planClipPlane = new Plane(new Vector3(0, -1, 0), hauteur);
+                renderer.clippingPlanes = [planClipPlane];
+                renderer.localClippingEnabled = true;
+
+                planViewActive = true;
+                btnPlanView.classList.add('active');
+                btnPlanView.innerHTML = '🗺️ Vue en plan ✓';
+                planControls.classList.add('visible');
+                afficherStatut(`🗺️ Vue en plan — coupe à ${hauteur.toFixed(2)} m`, 4000);
+            } catch(e) { console.warn('Vue en plan :', e); }
+        }
+
+        function quitterVueEnPlan() {
+            try {
+                const cam = viewer.context.ifcCamera;
+                if (planViewActive) {
+                    cam.toggleProjection(); // repasse en perspective
+                }
+                // Supprimer la coupe
+                const renderer = viewer.context.getRenderer();
+                renderer.clippingPlanes = [];
+                renderer.localClippingEnabled = false;
+                planClipPlane = null;
+                planViewActive = false;
+                btnPlanView.classList.remove('active');
+                btnPlanView.innerHTML = '🗺️ Vue en plan';
+                planControls.classList.remove('visible');
+                // Revenir à la vue d'accueil
+                if (homeView) {
+                    cam.cameraControls.setLookAt(
+                        homeView.position.x, homeView.position.y, homeView.position.z,
+                        homeView.target.x, homeView.target.y, homeView.target.z, true
+                    );
+                }
+                afficherStatut('↩️ Retour vue 3D', 3000);
+            } catch(e) { console.warn('Quitter vue en plan :', e); }
+        }
+
+        btnPlanView.addEventListener('click', () => {
+            if (planViewActive) {
+                quitterVueEnPlan();
+            } else {
+                const h = parseFloat(planHeightSlider.value);
+                activerVueEnPlan(h);
+            }
+        });
+
+        planHeightSlider.addEventListener('input', () => {
+            const h = parseFloat(planHeightSlider.value);
+            planHeightValue.textContent = h.toFixed(2) + ' m';
+            if (planViewActive) activerVueEnPlan(h);
+        });
+
+        btnExitPlan.addEventListener('click', quitterVueEnPlan);
+
+        document.getElementById('btn-exporter-bcf-drawer').addEventListener('click', exporterBCF);
+
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8); return v.toString(16);
+            });
+        }
+    </script>
+</body>
+
+    <script>
+        // Enregistrement du Service Worker pour le mode hors-ligne
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker enregistré avec succès !', reg.scope))
+                    .catch(err => console.error('Échec du Service Worker :', err));
+            });
+        }
+    </script>
+    
+</html>

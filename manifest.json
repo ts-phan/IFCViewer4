@@ -1,0 +1,24 @@
+{
+  "name": "Audit BIM — Visionneuse IFC & BCF",
+  "short_name": "Audit BIM",
+  "description": "Visionneuse IFC avec annotation BCF 2.1 hors-ligne",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f0f0f0",
+  "theme_color": "#007bff",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -608,7 +608,7 @@
                 rafraichirListeDefauts();
 
                 // Charger le .ifczip sample
-                const reponseIfc = await fetch('./sample/sample.ifczip');
+                const reponseIfc = await fetch('../../IFCViewer_lib/sample/sample.ifczip');
                 if (!reponseIfc.ok) throw new Error('sample.ifczip introuvable');
                 const ifcBlob = await reponseIfc.blob();
                 const ifcZip = await JSZip.loadAsync(ifcBlob);
@@ -631,7 +631,7 @@
 
                 // Charger le BCF sample
                 try {
-                    const reponseBcf = await fetch('./sample/sample.bcfzip');
+                    const reponseBcf = await fetch('../../IFCViewer_lib/sample/sample.bcfzip');
                     if (!reponseBcf.ok) throw new Error('BCF introuvable');
                     const bcfBlob = await reponseBcf.blob();
                     const zip = await JSZip.loadAsync(bcfBlob);
